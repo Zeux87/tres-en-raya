@@ -25,41 +25,8 @@
   h1 .r { color: var(--rojo); }
   h1 .a { color: var(--amarillo); }
 
-  .marcador {
-    display: grid;
-    grid-template-columns: 1fr .8fr 1fr;
-    gap: 10px;
-  }
-  .casillero {
-    background: var(--tarjeta);
-    border-radius: 14px;
-    padding: 10px 6px;
-    text-align: center;
-    box-shadow: var(--sombra);
-    border: 2px solid transparent;
-    transition: border-color .25s, transform .25s;
-  }
-  .casillero .nombre {
-    font-size: 13px;
-    color: var(--suave);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-  }
-  .casillero .nombre i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
-  .casillero .puntos { font-size: 28px; font-weight: 800; line-height: 1.2; }
-  #casR .nombre i { background: var(--rojo); }
-  #casA .nombre i { background: var(--amarillo); }
-  #casR .puntos { color: var(--rojo); }
-  #casA .puntos { color: var(--amarillo-texto); }
-  #casR.turno { border-color: var(--rojo); transform: translateY(-2px); }
-  #casA.turno { border-color: var(--amarillo); transform: translateY(-2px); }
-
-  #estado { text-align: center; font-size: 18px; font-weight: 700; min-height: 26px; }
-  #estado.gana-R { color: var(--rojo); }
-  #estado.gana-A { color: var(--amarillo-texto); }
+  .estado.gana-R { color: var(--rojo); }
+  .estado.gana-A { color: var(--amarillo-texto); }
 
   /* Indicador de columna encima del tablero */
   .flechas {
@@ -132,29 +99,25 @@
 <body>
 <main>
   <div class="barra">
-    <a class="volver" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">‹ Menú</a>
+    <a class="volver" href="index.html">‹ Menú</a>
     <h1>Conecta <span class="r">4</span></h1>
     <span></span>
   </div>
 
   <div class="segmentos" id="modos">
-    <button data-modo="movil">Contra el móvil</button>
-    <button data-modo="dos">2 jugadores</button>
+    <button data-valor="movil">Contra el móvil</button>
+    <button data-valor="dos">2 jugadores</button>
   </div>
 
   <div class="segmentos" id="dificultades">
-    <button data-dif="facil">Fácil</button>
-    <button data-dif="normal">Normal</button>
-    <button data-dif="dificil">Difícil</button>
+    <button data-valor="facil">Fácil</button>
+    <button data-valor="normal">Normal</button>
+    <button data-valor="dificil">Difícil</button>
   </div>
 
-  <div class="marcador">
-    <div class="casillero" id="casR"><div class="nombre"><i></i><span id="nombreR">Tú</span></div><div class="puntos" id="puntosR">0</div></div>
-    <div class="casillero" id="casE"><div class="nombre">Empates</div><div class="puntos" id="puntosE">0</div></div>
-    <div class="casillero" id="casA"><div class="nombre"><i></i><span id="nombreA">Móvil</span></div><div class="puntos" id="puntosA">0</div></div>
-  </div>
+  <div id="marcador"></div>
 
-  <div id="estado"></div>
+  <div class="estado" id="estado"></div>
 
   <div>
     <div class="flechas" id="flechas"></div>
@@ -167,6 +130,7 @@
   </div>
 </main>
 
+<script src="plataforma.js"></script>
 <script src="conecta4.js"></script>
 <script src="conecta4-interfaz.js"></script>
 </body>

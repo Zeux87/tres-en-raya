@@ -8,6 +8,7 @@
 <style>
   h1 { margin-top: 18px; font-size: 32px; }
   .subtitulo { text-align: center; color: var(--suave); margin: -6px 0 8px; }
+  #juegos { display: flex; flex-direction: column; gap: 14px; }
   .juego {
     display: flex;
     align-items: center;
@@ -32,64 +33,46 @@
   <h1>Juegos</h1>
   <p class="subtitulo">Elige a qué jugar</p>
 
-  <a class="juego" href="tresenraya.html">
-    <svg viewBox="0 0 76 76" aria-hidden="true">
-      <rect width="76" height="76" fill="#4b3fd6"/>
-      <path d="M31 16v44M45 16v44M16 31h44M16 45h44" stroke="#fff" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M19 19l8 8M27 19l-8 8M34 34l8 8M42 34l-8 8M49 49l8 8M57 49l-8 8" stroke="#ff7a7a" stroke-width="3.2" stroke-linecap="round"/>
-      <circle cx="53" cy="23" r="4.6" fill="none" stroke="#4fe0d3" stroke-width="3"/>
-      <circle cx="23" cy="53" r="4.6" fill="none" stroke="#4fe0d3" stroke-width="3"/>
-    </svg>
-    <div>
-      <div class="titulo">3 en raya</div>
-      <div class="texto">Contra el móvil (3 niveles) o a dos jugadores</div>
-    </div>
-  </a>
-
-  <a class="juego" href="conecta4.html">
-    <svg viewBox="0 0 76 76" aria-hidden="true">
-      <rect width="76" height="76" fill="#2f5fd0"/>
-      <g fill="#1d3f99"><circle cx="16" cy="16" r="7"/><circle cx="31" cy="16" r="7"/><circle cx="46" cy="16" r="7"/><circle cx="16" cy="31" r="7"/><circle cx="31" cy="31" r="7"/><circle cx="16" cy="46" r="7"/></g>
-      <circle cx="31" cy="61" r="7" fill="#f5bd2e"/><circle cx="46" cy="46" r="7" fill="#f5bd2e"/><circle cx="46" cy="61" r="7" fill="#f5bd2e"/><circle cx="61" cy="31" r="7" fill="#f5bd2e"/><circle cx="61" cy="46" r="7" fill="#f5bd2e"/>
-      <circle cx="16" cy="61" r="7" fill="#e8455a"/><circle cx="31" cy="46" r="7" fill="#e8455a"/><circle cx="46" cy="31" r="7" fill="#e8455a"/><circle cx="61" cy="16" r="7" fill="#e8455a"/><circle cx="61" cy="61" r="7" fill="#e8455a"/>
-      <path d="M16 61L61 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4" opacity=".85"/>
-    </svg>
-    <div>
-      <div class="titulo">Conecta 4</div>
-      <div class="texto">Contra el móvil (3 niveles) o a dos jugadores</div>
-    </div>
-  </a>
-
-  <a class="juego" href="flota.html">
-    <svg viewBox="0 0 76 76" aria-hidden="true">
-      <rect width="76" height="76" fill="#1d5f9e"/>
-      <path d="M8 52c6 0 6-4 12-4s6 4 12 4 6-4 12-4 6 4 12 4 6-4 12-4" fill="none" stroke="#9fd3ff" stroke-width="3" stroke-linecap="round"/>
-      <path d="M14 40h46l-7 9H22z" fill="#e8eef6"/>
-      <rect x="28" y="30" width="16" height="10" rx="2" fill="#e8eef6"/>
-      <rect x="34" y="22" width="4" height="9" fill="#e8eef6"/>
-      <circle cx="58" cy="20" r="6" fill="#ff6b6b"/>
-      <path d="M54 16l8 8M62 16l-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-    <div>
-      <div class="titulo">Hundir la flota</div>
-      <div class="texto">2 jugadores en el mismo móvil<span id="pendiente"></span></div>
-    </div>
-  </a>
+  <nav id="juegos"></nav>
 
   <footer id="pie"></footer>
 </main>
+<script src="plataforma.js"></script>
+<script src="juegos.js"></script>
 <script>
   (function () {
     'use strict';
-    // Aviso si hay una partida de la flota a medias
-    try {
-      var p = JSON.parse(localStorage.getItem('flota.partida'));
-      if (p && p.fase && p.fase !== 'inicio' && p.fase !== 'fin') {
-        var s = document.getElementById('pendiente');
-        s.className = 'pendiente';
-        s.textContent = ' · partida a medias';
-      }
-    } catch (e) { /* nada */ }
+    // Tarjetas del menú a partir de la lista de juegos (juegos.js)
+    var nav = document.getElementById('juegos');
+    function pintarMenu() {
+      nav.innerHTML = '';
+      window.JUEGOS.forEach(function (j) {
+        var a = document.createElement('a');
+        a.className = 'juego';
+        a.href = j.pagina;
+        a.innerHTML = '<svg viewBox="0 0 76 76" aria-hidden="true">' + j.icono + '</svg>';
+        var div = document.createElement('div');
+        var t = document.createElement('div');
+        t.className = 'titulo';
+        t.textContent = j.titulo;
+        var x = document.createElement('div');
+        x.className = 'texto';
+        x.textContent = j.texto;
+        if (Plataforma.enCurso(j.id)) {
+          var p = document.createElement('span');
+          p.className = 'pendiente';
+          p.textContent = ' · partida a medias';
+          x.appendChild(p);
+        }
+        div.appendChild(t);
+        div.appendChild(x);
+        a.appendChild(div);
+        nav.appendChild(a);
+      });
+    }
+    pintarMenu();
+    // Al volver con "atrás" la página puede salir de la caché: refrescar avisos
+    window.addEventListener('pageshow', function (e) { if (e.persisted) pintarMenu(); });
 
     var Android = window.Android;
     if (Android && Android.version) {

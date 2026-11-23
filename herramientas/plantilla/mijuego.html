@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mi juego</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  /* Estilos propios del juego. Colores, botones, marcador y modo oscuro ya vienen en comun.css */
+  .tablero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tablero button { aspect-ratio: 1; border: 0; border-radius: 14px; background: var(--tarjeta); font: inherit; font-size: 28px; box-shadow: var(--sombra); }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Mi juego</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-valor="movil">Contra el móvil</button>
+    <button data-valor="dos">2 jugadores</button>
+  </div>
+
+  <div id="marcador"></div>
+  <div class="estado" id="estado"></div>
+
+  <div class="tablero" id="tablero"></div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<!-- plataforma.js siempre el primero -->
+<script src="plataforma.js"></script>
+<script src="mijuego.js"></script>
+<script src="mijuego-interfaz.js"></script>
+</body>
+</html>

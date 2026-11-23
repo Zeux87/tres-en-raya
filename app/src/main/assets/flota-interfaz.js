@@ -4,15 +4,17 @@
   'use strict';
 
   var F = window.Flota;
-  var Android = window.Android;
+  var P = window.Plataforma;
   var raiz = document.getElementById('pantalla');
 
-  var CLAVE_PARTIDA = 'flota.partida';
-  var CLAVE_NOMBRES = 'flota.nombres';
-  var CLAVE_MARCADOR = 'flota.marcador';
-  var CLAVE_EMPIEZA = 'flota.empieza';
+  // Datos en "flota.partida", "flota.nombres", "flota.marcador" y "flota.empieza"
+  var almacen = P.almacen('flota');
+  var partida = P.partida('flota');
+  var CLAVE_NOMBRES = 'nombres';
+  var CLAVE_MARCADOR = 'marcador';
+  var CLAVE_EMPIEZA = 'empieza';
 
-  var estado = leer(CLAVE_PARTIDA, null);
+  var estado = partida.cargar();
   if (!estado || !estado.fase || !estado.jugadores) estado = { fase: 'inicio' };
 
   // Estado solo de pantalla (no se guarda)
@@ -20,18 +22,13 @@
   var temporizador = null;
 
   // ---------- Almacenamiento ----------
-  function leer(clave, porDefecto) {
-    try {
-      var v = JSON.parse(localStorage.getItem(clave));
-      return v === null || v === undefined ? porDefecto : v;
-    } catch (e) {
-      return porDefecto;
-    }
+  var leer = almacen.leer;
+  var escribir = almacen.escribir;
+  function guardar() {
+    var enCurso = !!estado.jugadores && estado.fase !== 'inicio' && estado.fase !== 'fin' &&
+      (estado.ganador === null || estado.ganador === undefined);
+    partida.guardar(estado, enCurso);
   }
-  function escribir(clave, valor) {
-    try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ }
-  }
-  function guardar() { escribir(CLAVE_PARTIDA, estado); }
 
   function nombres() {
     var n = leer(CLAVE_NOMBRES, null);
@@ -59,12 +56,7 @@
     return e;
   }
 
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
+  var vibrar = P.vibrar;
 
   function jugador(i) { return estado.jugadores[i]; }
   function actual() { return jugador(estado.actual); }
@@ -76,19 +68,7 @@
     return h('span', { clase: 'cuadros' }, r);
   }
 
-  function barra(titulo) {
-    return h('div', { clase: 'barra' }, [
-      h('a', { clase: 'volver', href: 'index.html', texto: '‹ Menú', alClick: function (e) {
-        // Vuelve atrás en vez de abrir otro menú, para no acumular pantallas
-        if (history.length > 1) {
-          e.preventDefault();
-          history.back();
-        }
-      } }),
-      h('h1', { texto: titulo }),
-      h('span')
-    ]);
-  }
+  var barra = P.barra;
 
   // ---------- Tablero ----------
   // opciones: { jugador, verBarcos, tam: 'grande'|'pequeno', alPulsar, seleccionado, ultimo, invalida }
@@ -600,5 +580,6 @@
   } else {
     estado = { fase: 'inicio' };
   }
+  guardar(); // deja al día la marca de "partida a medias" del menú
   pintar();
 })();

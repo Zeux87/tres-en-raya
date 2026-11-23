@@ -4,10 +4,11 @@
   'use strict';
 
   var C = window.Conecta4;
-  var Android = window.Android;
+  var P = window.Plataforma;
 
-  var CLAVE = 'conecta4.v1';
-  var datos = cargar();
+  var almacen = P.almacen('conecta4'); // ajustes y marcadores en "conecta4.v1"
+  var partida = P.partida('conecta4'); // partida a medias en "conecta4.partida"
+  var datos = P.ajustes(almacen.leer('v1', null), ['facil', 'normal', 'dificil'], 'normal');
 
   var tablero, turno, terminada, ocupado, empiezaR = true, ficha = 0;
   var huecos = [];
@@ -15,37 +16,32 @@
   var el = {
     tablero: document.getElementById('tablero'),
     flechas: document.getElementById('flechas'),
-    estado: document.getElementById('estado'),
-    casR: document.getElementById('casR'),
-    casA: document.getElementById('casA'),
-    casE: document.getElementById('casE'),
-    nombreR: document.getElementById('nombreR'),
-    nombreA: document.getElementById('nombreA'),
-    puntosR: document.getElementById('puntosR'),
-    puntosA: document.getElementById('puntosA'),
-    puntosE: document.getElementById('puntosE'),
-    modos: document.getElementById('modos'),
-    dificultades: document.getElementById('dificultades')
+    estado: document.getElementById('estado')
   };
 
+  var mc = P.marcador(document.getElementById('marcador'), [
+    { id: 'R', color: 'var(--rojo)', punto: true },
+    { id: 'E', nombre: 'Empates' },
+    { id: 'A', color: 'var(--amarillo)', colorTexto: 'var(--amarillo-texto)', punto: true }
+  ]);
+  var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    datos.modo = m;
+    cambiarAjustes();
+  });
+  var dificultades = P.segmentos(document.getElementById('dificultades'), datos.dificultad, function (d) {
+    datos.dificultad = d;
+    cambiarAjustes();
+  });
+
   // ---------- Persistencia ----------
-  function cargar() {
-    var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
-    if (!d || typeof d !== 'object') d = {};
-    if (d.modo !== 'movil' && d.modo !== 'dos') d.modo = 'movil';
-    if (['facil', 'normal', 'dificil'].indexOf(d.dificultad) < 0) d.dificultad = 'normal';
-    if (!d.marcadores || typeof d.marcadores !== 'object') d.marcadores = {};
-    return d;
-  }
-  function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
-  }
+  function guardar() { almacen.escribir('v1', datos); }
   function claveMarcador() { return datos.modo === 'dos' ? 'dos' : 'movil-' + datos.dificultad; }
-  function marcador() {
-    var k = claveMarcador();
-    if (!datos.marcadores[k]) datos.marcadores[k] = { R: 0, A: 0, E: 0 };
-    return datos.marcadores[k];
+  function marcador() { return P.marcadorDe(datos.marcadores, claveMarcador(), ['R', 'A', 'E']); }
+
+  // La partida a medias se guarda tras cada jugada y se borra al terminar
+  function guardarPartida() {
+    if (terminada) return partida.borrar();
+    partida.guardar({ clave: claveMarcador(), tablero: tablero, turno: turno, empiezaR: empiezaR });
   }
 
   // ---------- Utilidades ----------
@@ -54,17 +50,7 @@
     if (contraMovil()) return f === 'R' ? 'Tú' : 'El móvil';
     return f === 'R' ? 'Rojas' : 'Amarillas';
   }
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
-  function saltar(nodo) {
-    nodo.classList.remove('salto');
-    void nodo.offsetWidth;
-    nodo.classList.add('salto');
-  }
+  var vibrar = P.vibrar;
 
   // ---------- Pintado ----------
   function crearTablero() {
@@ -83,25 +69,16 @@
   }
 
   function pintarAjustes() {
-    var bm = el.modos.querySelectorAll('button');
-    for (var i = 0; i < bm.length; i++) bm[i].classList.toggle('activo', bm[i].getAttribute('data-modo') === datos.modo);
-    var bd = el.dificultades.querySelectorAll('button');
-    for (var j = 0; j < bd.length; j++) bd[j].classList.toggle('activo', bd[j].getAttribute('data-dif') === datos.dificultad);
-    el.dificultades.classList.toggle('oculto', !contraMovil());
-    el.nombreR.textContent = contraMovil() ? 'Tú' : 'Rojas';
-    el.nombreA.textContent = contraMovil() ? 'Móvil' : 'Amarillas';
+    modos.poner(datos.modo);
+    dificultades.poner(datos.dificultad);
+    dificultades.ver(contraMovil());
+    mc.nombres(contraMovil() ? { R: 'Tú', A: 'Móvil' } : { R: 'Rojas', A: 'Amarillas' });
   }
 
-  function pintarMarcador() {
-    var m = marcador();
-    el.puntosR.textContent = m.R;
-    el.puntosA.textContent = m.A;
-    el.puntosE.textContent = m.E;
-  }
+  function pintarMarcador() { mc.pintar(marcador()); }
 
   function pintarTurno() {
-    el.casR.classList.toggle('turno', !terminada && turno === 'R');
-    el.casA.classList.toggle('turno', !terminada && turno === 'A');
+    mc.turno(terminada ? null : turno);
     document.documentElement.style.setProperty('--color-turno', turno === 'R' ? 'var(--rojo)' : 'var(--amarillo)');
     var texto;
     if (contraMovil()) texto = turno === 'R' ? 'Te toca: toca una columna' : 'El móvil está pensando…';
@@ -111,7 +88,7 @@
 
   function ponerEstado(texto, clase) {
     el.estado.textContent = texto;
-    el.estado.className = clase || '';
+    el.estado.className = 'estado' + (clase ? ' ' + clase : '');
   }
 
   function marcarFlecha(col) {
@@ -127,11 +104,39 @@
     ocupado = false;
     turno = empiezaR ? 'R' : 'A';
     empiezaR = !empiezaR; // la próxima empieza el otro color
+    partida.borrar();
+    empezar();
+  }
+
+  // Pinta la partida actual (nueva o recuperada) y, si le toca, juega el móvil
+  function empezar() {
     crearTablero();
+    for (var i = 0; i < C.TOTAL; i++) {
+      if (!tablero[i]) continue;
+      var f = document.createElement('div');
+      f.className = 'ficha ' + tablero[i];
+      huecos[i].appendChild(f);
+    }
     pintarAjustes();
     pintarMarcador();
     pintarTurno();
     if (contraMovil() && turno === 'A') turnoMovil();
+  }
+
+  // Recupera la partida a medias si es del modo y dificultad actuales
+  function recuperar() {
+    var g = partida.cargar();
+    if (!g || g.clave !== claveMarcador() || !Array.isArray(g.tablero) || g.tablero.length !== C.TOTAL) return false;
+    if (g.turno !== 'R' && g.turno !== 'A') return false;
+    if (!C.columnasLibres(g.tablero).length) return false;
+    ficha++;
+    tablero = g.tablero;
+    turno = g.turno;
+    empiezaR = g.empiezaR !== false;
+    terminada = false;
+    ocupado = false;
+    empezar();
+    return true;
   }
 
   function puedeTocar() {
@@ -205,6 +210,7 @@
       if (!C.columnasLibres(tablero).length) return finPartida('empate');
 
       turno = C.rival(turno);
+      guardarPartida();
       marcarFlecha(-1);
       pintarTurno();
       if (despues) despues();
@@ -217,13 +223,12 @@
     terminada = true;
     ocupado = false;
     marcarFlecha(-1);
-    el.casR.classList.remove('turno');
-    el.casA.classList.remove('turno');
+    mc.turno(null);
     var m = marcador();
     if (r === 'empate') {
       m.E++;
       ponerEstado('Empate: tablero lleno');
-      saltar(el.casE);
+      mc.saltar('E');
       vibrar(60);
     } else {
       m[r.ficha]++;
@@ -236,31 +241,20 @@
       if (contraMovil()) texto = r.ficha === 'R' ? '¡Has ganado! 🎉' : 'Gana el móvil';
       else texto = '¡Ganan las ' + (r.ficha === 'R' ? 'rojas' : 'amarillas') + '! 🎉';
       ponerEstado(texto, 'gana-' + r.ficha);
-      saltar(r.ficha === 'R' ? el.casR : el.casA);
+      mc.saltar(r.ficha);
       vibrar(r.ficha === 'R' || !contraMovil() ? 220 : 90);
     }
     guardar();
+    partida.borrar();
     pintarMarcador();
   }
 
   // ---------- Controles ----------
-  el.modos.addEventListener('click', function (e) {
-    var m = e.target.getAttribute && e.target.getAttribute('data-modo');
-    if (!m || m === datos.modo) return;
-    datos.modo = m;
+  function cambiarAjustes() {
     guardar();
     empiezaR = true;
     nuevaPartida();
-  });
-
-  el.dificultades.addEventListener('click', function (e) {
-    var d = e.target.getAttribute && e.target.getAttribute('data-dif');
-    if (!d || d === datos.dificultad) return;
-    datos.dificultad = d;
-    guardar();
-    empiezaR = true;
-    nuevaPartida();
-  });
+  }
 
   document.getElementById('nueva').addEventListener('click', nuevaPartida);
 
@@ -270,5 +264,5 @@
     pintarMarcador();
   });
 
-  nuevaPartida();
+  if (!recuperar()) nuevaPartida();
 })();
