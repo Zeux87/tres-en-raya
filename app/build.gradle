@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.application'
+}
+
+// GitHub Actions pasa -PcodigoVersion=<número de compilación>; en local vale 1
+def codigo = (project.findProperty('codigoVersion') ?: '1').toString().toInteger()
+
+android {
+    namespace 'es.pablo.tresenraya'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'es.pablo.tresenraya'
+        minSdk 27
+        targetSdk 34
+        versionCode codigo
+        versionName "1.0.${codigo}"
+    }
+
+    // Misma firma siempre, para que cada APK nuevo se instale encima del anterior
+    signingConfigs {
+        release {
+            storeFile file('tresenraya.jks')
+            storePassword 'tresenraya'
+            keyAlias 'tresenraya'
+            keyPassword 'tresenraya'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
