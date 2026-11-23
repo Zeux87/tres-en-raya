@@ -14,12 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pruebas de la lógica del juego
+      - name: Preparar Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node herramientas/pruebas.js && node herramientas/pruebas-flota.js && node herramientas/pruebas-conecta4.js
-      - run: node herramientas/pruebas-ppt.js && node herramientas/pruebas-buscaminas.js && node herramientas/pruebas-snake.js && node herramientas/pruebas-2048.js
+
+      # Ejecuta todos los herramientas/pruebas*.js (lógica de cada juego, plantilla y lista de juegos)
+      - name: Pruebas
+        run: node herramientas/todas.js
 
       - uses: actions/setup-java@v4
         with:

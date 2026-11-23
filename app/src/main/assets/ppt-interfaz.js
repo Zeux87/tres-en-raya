@@ -3,9 +3,9 @@
   'use strict';
 
   var P = window.PPT;
-  var Android = window.Android;
+  var Pl = window.Plataforma;
+  var almacen = Pl.almacen('ppt'); // datos en "ppt.v1"
 
-  var CLAVE = 'ppt.v1';
   var MANOS = { piedra: '✊', papel: '✋', tijera: '✌️' };
   var NOMBRES = { piedra: 'piedra', papel: 'papel', tijera: 'tijera' };
   var AYUDA = {
@@ -24,19 +24,19 @@
     manoM: document.getElementById('manoM'),
     estado: document.getElementById('estado'),
     racha: document.getElementById('racha'),
-    opciones: document.getElementById('opciones'),
-    puntosT: document.getElementById('puntosT'),
-    puntosE: document.getElementById('puntosE'),
-    puntosM: document.getElementById('puntosM'),
-    casT: document.getElementById('casT'),
-    casE: document.getElementById('casE'),
-    casM: document.getElementById('casM')
+    opciones: document.getElementById('opciones')
   };
+
+  var mc = Pl.marcador(document.getElementById('marcador'), [
+    { id: 'T', nombre: 'Tú', color: 'var(--tu)' },
+    { id: 'E', nombre: 'Empates' },
+    { id: 'M', nombre: 'Móvil', color: 'var(--movil)' }
+  ]);
 
   // ---------- Persistencia ----------
   function cargar() {
     var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
+    d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (d.nivel !== 'facil' && d.nivel !== 'listo') d.nivel = 'listo';
     if (!d.marcadores || typeof d.marcadores !== 'object') d.marcadores = {};
@@ -44,7 +44,7 @@
     return d;
   }
   function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
+    almacen.escribir('v1', datos);
   }
   function marcador() {
     var m = datos.marcadores[datos.nivel];
@@ -54,17 +54,7 @@
   }
 
   // ---------- Utilidades ----------
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
-  function saltar(nodo) {
-    nodo.classList.remove('salto');
-    void nodo.offsetWidth;
-    nodo.classList.add('salto');
-  }
+  var vibrar = Pl.vibrar;
 
   // ---------- Pintado ----------
   function pintar() {
@@ -72,9 +62,7 @@
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('activo', bs[i].getAttribute('data-nivel') === datos.nivel);
     el.ayuda.textContent = AYUDA[datos.nivel];
     var m = marcador();
-    el.puntosT.textContent = m.T;
-    el.puntosE.textContent = m.E;
-    el.puntosM.textContent = m.M;
+    mc.pintar(m);
     var txt = '';
     if (m.racha >= 2) txt = 'Racha: ' + m.racha + ' victorias seguidas';
     if (m.mejor >= 2) txt += (txt ? ' · ' : '') + 'Mejor racha: ' + m.mejor;
@@ -123,7 +111,7 @@
         el.manoT.classList.add('gana');
         el.manoM.classList.add('pierde');
         ponerEstado('¡Ganas! ' + cap(NOMBRES[mia]) + ' gana a ' + NOMBRES[suya], 'gana');
-        saltar(el.casT);
+        mc.saltar('T');
         vibrar(120);
       } else if (r === 'pierde') {
         m.M++;
@@ -131,12 +119,12 @@
         el.manoM.classList.add('gana');
         el.manoT.classList.add('pierde');
         ponerEstado('Pierdes: ' + NOMBRES[suya] + ' gana a ' + NOMBRES[mia], 'pierde');
-        saltar(el.casM);
+        mc.saltar('M');
         vibrar(60);
       } else {
         m.E++;
         ponerEstado('Empate: los dos sacáis ' + NOMBRES[mia]);
-        saltar(el.casE);
+        mc.saltar('E');
         vibrar(30);
       }
       guardar();

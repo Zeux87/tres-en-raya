@@ -3,60 +3,51 @@
   'use strict';
 
   var T = window.TresEnRaya;
-  var Android = window.Android; // puente nativo (solo existe dentro de la app)
+  var P = window.Plataforma;
   var SVG = 'http://www.w3.org/2000/svg';
 
-  var CLAVE = 'tresenraya.v1';
-  var datos = cargar();
+  var almacen = P.almacen('tresenraya'); // ajustes y marcadores en "tresenraya.v1"
+  var partida = P.partida('tresenraya'); // partida a medias en "tresenraya.partida"
+  var datos = P.ajustes(almacen.leer('v1', null), ['facil', 'normal', 'imposible'], 'normal');
 
   var tablero, turno, terminada, empiezaX = true, ficha = 0;
 
   var el = {
     tablero: document.getElementById('tablero'),
     linea: document.getElementById('linea'),
-    estado: document.getElementById('estado'),
-    casX: document.getElementById('casX'),
-    casO: document.getElementById('casO'),
-    nombreX: document.getElementById('nombreX'),
-    nombreO: document.getElementById('nombreO'),
-    puntosX: document.getElementById('puntosX'),
-    puntosE: document.getElementById('puntosE'),
-    puntosO: document.getElementById('puntosO'),
-    modos: document.getElementById('modos'),
-    dificultades: document.getElementById('dificultades')
+    estado: document.getElementById('estado')
   };
 
+  var mc = P.marcador(document.getElementById('marcador'), [
+    { id: 'X', color: 'var(--x)' },
+    { id: 'E', nombre: 'Empates' },
+    { id: 'O', color: 'var(--o)' }
+  ]);
+  var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    datos.modo = m;
+    cambiarAjustes();
+  });
+  var dificultades = P.segmentos(document.getElementById('dificultades'), datos.dificultad, function (d) {
+    datos.dificultad = d;
+    cambiarAjustes();
+  });
+
   // ---------- Persistencia ----------
-  function cargar() {
-    var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
-    if (!d || typeof d !== 'object') d = {};
-    if (d.modo !== 'movil' && d.modo !== 'dos') d.modo = 'movil';
-    if (['facil', 'normal', 'imposible'].indexOf(d.dificultad) < 0) d.dificultad = 'normal';
-    if (!d.marcadores || typeof d.marcadores !== 'object') d.marcadores = {};
-    return d;
-  }
-  function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
-  }
+  function guardar() { almacen.escribir('v1', datos); }
   function claveMarcador() {
     return datos.modo === 'dos' ? 'dos' : 'movil-' + datos.dificultad;
   }
-  function marcador() {
-    var k = claveMarcador();
-    if (!datos.marcadores[k]) datos.marcadores[k] = { X: 0, O: 0, E: 0 };
-    return datos.marcadores[k];
+  function marcador() { return P.marcadorDe(datos.marcadores, claveMarcador(), ['X', 'O', 'E']); }
+
+  // La partida a medias se guarda tras cada jugada y se borra al terminar
+  function guardarPartida() {
+    if (terminada || tablero.every(function (c) { return !c; })) return partida.borrar();
+    partida.guardar({ clave: claveMarcador(), tablero: tablero, turno: turno, empiezaX: empiezaX });
   }
 
   // ---------- Utilidades ----------
   function contraMovil() { return datos.modo === 'movil'; }
-
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
+  var vibrar = P.vibrar;
 
   function dibujoFicha(f) {
     var svg = document.createElementNS(SVG, 'svg');
@@ -83,30 +74,19 @@
 
   // ---------- Pintado ----------
   function pintarAjustes() {
-    var bm = el.modos.querySelectorAll('button');
-    for (var i = 0; i < bm.length; i++) bm[i].classList.toggle('activo', bm[i].getAttribute('data-modo') === datos.modo);
-    var bd = el.dificultades.querySelectorAll('button');
-    for (var j = 0; j < bd.length; j++) bd[j].classList.toggle('activo', bd[j].getAttribute('data-dif') === datos.dificultad);
-    el.dificultades.classList.toggle('oculto', !contraMovil());
-    el.nombreX.textContent = contraMovil() ? 'Tú (X)' : 'Jugador X';
-    el.nombreO.textContent = contraMovil() ? 'Móvil (O)' : 'Jugador O';
+    modos.poner(datos.modo);
+    dificultades.poner(datos.dificultad);
+    dificultades.ver(contraMovil());
+    mc.nombres(contraMovil() ? { X: 'Tú (X)', O: 'Móvil (O)' } : { X: 'Jugador X', O: 'Jugador O' });
   }
 
-  function pintarMarcador() {
-    var m = marcador();
-    el.puntosX.textContent = m.X;
-    el.puntosO.textContent = m.O;
-    el.puntosE.textContent = m.E;
-  }
+  function pintarMarcador() { mc.pintar(marcador()); }
 
-  function pintarTurno() {
-    el.casX.classList.toggle('turno', !terminada && turno === 'X');
-    el.casO.classList.toggle('turno', !terminada && turno === 'O');
-  }
+  function pintarTurno() { mc.turno(terminada ? null : turno); }
 
   function ponerEstado(texto, clase) {
     el.estado.textContent = texto;
-    el.estado.className = clase || '';
+    el.estado.className = 'estado' + (clase ? ' ' + clase : '');
   }
 
   function textoTurno() {
@@ -141,12 +121,6 @@
     el.linea.appendChild(l);
   }
 
-  function saltar(nodo) {
-    nodo.classList.remove('salto');
-    void nodo.offsetWidth; // reinicia la animación
-    nodo.classList.add('salto');
-  }
-
   // ---------- Juego ----------
   function nuevaPartida() {
     ficha++; // invalida jugadas del móvil pendientes
@@ -154,12 +128,38 @@
     terminada = false;
     turno = empiezaX ? 'X' : 'O';
     empiezaX = !empiezaX; // la siguiente partida empieza el otro
+    partida.borrar();
+    empezar();
+  }
+
+  // Pinta la partida actual (nueva o recuperada) y, si le toca, juega el móvil
+  function empezar() {
     crearTablero();
+    for (var i = 0; i < 9; i++) {
+      if (!tablero[i]) continue;
+      el.tablero.children[i].classList.add('ocupada');
+      el.tablero.children[i].appendChild(dibujoFicha(tablero[i]));
+    }
     pintarAjustes();
     pintarMarcador();
     pintarTurno();
     ponerEstado(textoTurno());
     if (contraMovil() && turno === 'O') turnoMovil();
+  }
+
+  // Recupera la partida a medias si es del modo y dificultad actuales
+  function recuperar() {
+    var g = partida.cargar();
+    if (!g || g.clave !== claveMarcador() || !Array.isArray(g.tablero) || g.tablero.length !== 9) return false;
+    if (g.turno !== 'X' && g.turno !== 'O') return false;
+    if (T.resultado(g.tablero)) return false;
+    ficha++;
+    tablero = g.tablero;
+    turno = g.turno;
+    empiezaX = g.empiezaX !== false;
+    terminada = false;
+    empezar();
+    return true;
   }
 
   function pulsar(i) {
@@ -190,6 +190,7 @@
     if (r) return finPartida(r);
 
     turno = T.rival(turno);
+    guardarPartida();
     pintarTurno();
     ponerEstado(textoTurno());
   }
@@ -203,7 +204,7 @@
     if (r === 'empate') {
       m.E++;
       ponerEstado('Empate');
-      saltar(document.getElementById('casE'));
+      mc.saltar('E');
       vibrar(60);
     } else {
       m[r.ficha]++;
@@ -217,31 +218,20 @@
       if (contraMovil()) texto = r.ficha === 'X' ? '¡Has ganado! 🎉' : 'Gana el móvil';
       else texto = '¡Gana ' + r.ficha + '! 🎉';
       ponerEstado(texto, r.ficha === 'X' ? 'gana-x' : 'gana-o');
-      saltar(r.ficha === 'X' ? el.casX : el.casO);
+      mc.saltar(r.ficha);
       vibrar(r.ficha === 'X' || !contraMovil() ? 180 : 90);
     }
     guardar();
+    partida.borrar();
     pintarMarcador();
   }
 
   // ---------- Controles ----------
-  el.modos.addEventListener('click', function (e) {
-    var m = e.target.getAttribute && e.target.getAttribute('data-modo');
-    if (!m || m === datos.modo) return;
-    datos.modo = m;
+  function cambiarAjustes() {
     guardar();
     empiezaX = true;
     nuevaPartida();
-  });
-
-  el.dificultades.addEventListener('click', function (e) {
-    var d = e.target.getAttribute && e.target.getAttribute('data-dif');
-    if (!d || d === datos.dificultad) return;
-    datos.dificultad = d;
-    guardar();
-    empiezaX = true;
-    nuevaPartida();
-  });
+  }
 
   document.getElementById('nueva').addEventListener('click', nuevaPartida);
 
@@ -251,5 +241,5 @@
     pintarMarcador();
   });
 
-  nuevaPartida();
+  if (!recuperar()) nuevaPartida();
 })();

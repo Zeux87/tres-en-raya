@@ -17,7 +17,7 @@ App Android con siete juegos:
 - Tablero de 10×10 y 5 barcos: portaaviones (5), acorazado (4), crucero (3), submarino (3) y destructor (2).
 - Los barcos no pueden tocarse, ni en diagonal. Se colocan a mano (tocar para poner, tocar el barco para girarlo) o al azar.
 - Si aciertas, vuelves a disparar; si es agua, pasas el móvil. Al hundir un barco se marca el agua de alrededor.
-- Pantalla tapada para pasar el móvil sin ver la flota del otro, partida guardada si se cierra la app, estadísticas y victorias por jugador.
+- Pantalla tapada para pasar el móvil sin ver la flota del otro, estadísticas y victorias por jugador.
 
 **Piedra, papel o tijera**
 - Contra el móvil: «Al azar» o «Listo», que se fija en lo que sueles sacar tras tus últimas jugadas e intenta adelantarse.
@@ -35,6 +35,9 @@ App Android con siete juegos:
 **2048**
 - Desliza para mover; dos fichas iguales se juntan. Récord, deshacer el último movimiento y partida guardada.
 
+Todos los juegos comparten una plantilla común (marcador, partida guardada, botón "‹ Menú" y estilos).
+Los que se juegan por partidas las guardan si se cierra la app, y el menú avisa con "partida a medias".
+
 Además: tema claro/oscuro automático, vibración y **actualización automática** desde Releases.
 
 ## Instalar
@@ -46,7 +49,7 @@ Descarga `tres-en-raya.apk` de la [última versión](https://github.com/Zeux87/t
 
 Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), que:
 
-1. Pasa las pruebas de la lógica de cada juego (`herramientas/pruebas*.js`).
+1. Pasa todas las pruebas (`node herramientas/todas.js`, que ejecuta cada `herramientas/pruebas*.js`).
 2. Compila el APK firmado con `app/tresenraya.jks`, usando el número de compilación como `versionCode`.
 3. Lo publica en Releases como `v<número>`; la app detecta esa versión y se actualiza.
 
@@ -54,8 +57,10 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 
 | Ruta | Qué hay |
 |---|---|
-| `app/src/main/assets/index.html` | Menú de inicio, versión y botón de actualizar |
-| `app/src/main/assets/comun.css` | Estilos compartidos (colores, botones, modo oscuro) |
+| `app/src/main/assets/index.html` | Menú de inicio (se genera desde `juegos.js`), versión y botón de actualizar |
+| `app/src/main/assets/juegos.js` | Lista de juegos: id, página, título, texto e icono de cada tarjeta del menú |
+| `app/src/main/assets/plataforma.js` | Plantilla común: almacenamiento, partida guardada, marcador, "‹ Menú", vibración |
+| `app/src/main/assets/comun.css` | Estilos compartidos (colores, botones, marcador, modo oscuro) |
 | `app/src/main/assets/tresenraya.html`, `interfaz.js`, `juego.js` | 3 en raya: pantalla, interfaz y lógica (minimax con poda alfa-beta) |
 | `app/src/main/assets/conecta4.html`, `conecta4-interfaz.js`, `conecta4.js` | Conecta 4: pantalla, interfaz y lógica con la IA |
 | `app/src/main/assets/flota.html`, `flota-interfaz.js`, `flota.js` | Hundir la flota: pantalla, interfaz y lógica |
@@ -64,4 +69,10 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 | `app/src/main/assets/snake.html`, `snake-interfaz.js`, `snake.js` | Snake |
 | `app/src/main/assets/2048.html`, `2048-interfaz.js`, `2048.js` | 2048 |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
-| `herramientas/` | Pruebas de la lógica de los juegos |
+| `herramientas/` | Pruebas (`todas.js` las lanza todas) y `plantilla/` para empezar un juego nuevo |
+
+## Añadir un juego
+
+1. Copia los archivos de `herramientas/plantilla/` como explica su [LEEME](herramientas/plantilla/LEEME.md).
+2. Añade una entrada en `app/src/main/assets/juegos.js`: el menú se genera solo.
+3. `node herramientas/todas.js`: el workflow no hay que tocarlo.

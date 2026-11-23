@@ -127,6 +127,36 @@ h1 {
   box-shadow: var(--sombra);
 }
 
+/* Marcador (Plataforma.marcador): un casillero por lado */
+.marcador { display: flex; gap: 10px; }
+.casillero {
+  flex: 1;
+  min-width: 0;
+  background: var(--tarjeta);
+  border-radius: 14px;
+  padding: 10px 6px;
+  text-align: center;
+  box-shadow: var(--sombra);
+  border: 2px solid transparent;
+  transition: border-color .25s, transform .25s;
+}
+.casillero.neutro { flex: .8; }
+.casillero .nombre {
+  font-size: 13px;
+  color: var(--suave);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.casillero .nombre i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; background: var(--color); }
+.casillero .puntos { font-size: 28px; font-weight: 800; line-height: 1.2; color: var(--color-texto, var(--color, var(--texto))); }
+.casillero.turno { border-color: var(--color, var(--acento)); transform: translateY(-2px); }
+
+/* Mensaje de estado bajo el marcador */
+.estado { text-align: center; font-size: 18px; font-weight: 700; min-height: 26px; }
+
 footer {
   margin-top: auto;
   text-align: center;

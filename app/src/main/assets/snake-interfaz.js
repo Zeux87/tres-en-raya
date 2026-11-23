@@ -4,13 +4,14 @@
   'use strict';
 
   var S = window.Snake;
-  var Android = window.Android;
+  var Pl = window.Plataforma;
+  var almacen = Pl.almacen('snake'); // datos en "snake.v1"
 
-  var CLAVE = 'snake.v1';
   var COLS = 15, FILAS = 17;
   var NIVELES = ['lento', 'normal', 'rapido'];
 
   var datos = cargar();
+  almacen.escribir('enCurso', !!datos.partida); // partida guardada antes de la plantilla
   var e = null;          // estado del juego
   var fase = 'inicio';   // 'inicio', 'jugando', 'pausa', 'fin'
   var reloj = null;
@@ -33,7 +34,7 @@
   // ---------- Persistencia ----------
   function cargar() {
     var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (er) { d = null; }
+    d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (NIVELES.indexOf(d.nivel) < 0) d.nivel = 'normal';
     if (!d.records || typeof d.records !== 'object') d.records = {};
@@ -42,17 +43,13 @@
   }
   function guardar() {
     datos.partida = e && e.vivo && (fase === 'jugando' || fase === 'pausa') ? { nivel: datos.nivel, estado: e } : null;
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (er) { /* sin almacenamiento */ }
+    almacen.escribir('v1', datos);
+    almacen.escribir('enCurso', !!datos.partida); // aviso de "partida a medias" en el menú
   }
   function record() { return datos.records[datos.nivel] || 0; }
 
   // ---------- Utilidades ----------
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (er) { /* nada */ }
-  }
+  var vibrar = Pl.vibrar;
   function leerColores() {
     var cs = getComputedStyle(document.documentElement);
     ['campo', 'campo2', 'serpiente', 'cabeza', 'comida'].forEach(function (k) {

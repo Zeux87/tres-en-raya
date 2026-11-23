@@ -4,12 +4,13 @@
   'use strict';
 
   var B = window.Buscaminas;
-  var Android = window.Android;
+  var Pl = window.Plataforma;
+  var almacen = Pl.almacen('buscaminas'); // datos en "buscaminas.v1"
 
-  var CLAVE = 'buscaminas.v1';
   var PULSACION_LARGA = 420; // ms
 
   var datos = cargar();
+  almacen.escribir('enCurso', Object.keys(datos.partidas).length > 0); // partidas guardadas antes de la plantilla
   var t, segundos, intervalo = null, casillas = [];
   var largo = { temporizador: null, hecho: false, casilla: -1 };
 
@@ -27,7 +28,7 @@
   // ---------- Persistencia ----------
   function cargar() {
     var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
+    d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (!B.NIVELES[d.nivel]) d.nivel = 'facil';
     if (d.modo !== 'abrir' && d.modo !== 'bandera') d.modo = 'abrir';
@@ -40,7 +41,8 @@
       if (t.fase === 'jugando') datos.partidas[datos.nivel] = { tablero: t, segundos: segundos };
       else delete datos.partidas[datos.nivel];
     }
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
+    almacen.escribir('v1', datos);
+    almacen.escribir('enCurso', Object.keys(datos.partidas).length > 0); // aviso de "partida a medias" en el menú
   }
   function stats() {
     var s = datos.stats[datos.nivel];
@@ -52,12 +54,7 @@
   }
 
   // ---------- Utilidades ----------
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
+  var vibrar = Pl.vibrar;
   function ponerEstado(texto, clase) {
     el.estado.textContent = texto;
     el.estado.className = clase || '';

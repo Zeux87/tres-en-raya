@@ -4,9 +4,9 @@
   'use strict';
 
   var J = window.Juego2048;
-  var Android = window.Android;
+  var Pl = window.Plataforma;
+  var almacen = Pl.almacen('2048'); // datos en "2048.v1"
 
-  var CLAVE = '2048.v1';
 
   var datos = cargar();
   var celdas = [];
@@ -28,7 +28,7 @@
   // datos = { tablero, puntos, record, ganado (ya se avisó de 2048), anterior: {tablero, puntos} }
   function cargar() {
     var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
+    d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (typeof d.record !== 'number') d.record = 0;
     if (!J.valido(d.tablero)) { d.tablero = null; d.anterior = null; }
@@ -37,16 +37,11 @@
     return d;
   }
   function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
+    almacen.escribir('v1', datos);
   }
 
   // ---------- Utilidades ----------
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
+  var vibrar = Pl.vibrar;
   function animar(nodo, clase) {
     nodo.classList.remove(clase);
     void nodo.offsetWidth;

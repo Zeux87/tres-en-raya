@@ -10,19 +10,6 @@
   @media (prefers-color-scheme: dark) { :root { --tu: #ff7070; --movil: #3fd0c4; } }
   h1 { font-size: 22px; }
 
-  .marcador { display: grid; grid-template-columns: 1fr .8fr 1fr; gap: 10px; }
-  .casillero {
-    background: var(--tarjeta);
-    border-radius: 14px;
-    padding: 10px 6px;
-    text-align: center;
-    box-shadow: var(--sombra);
-  }
-  .casillero .nombre { font-size: 13px; color: var(--suave); font-weight: 600; }
-  .casillero .puntos { font-size: 28px; font-weight: 800; line-height: 1.2; }
-  #casT .puntos { color: var(--tu); }
-  #casM .puntos { color: var(--movil); }
-
   .arena {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -75,7 +62,7 @@
 <body>
 <main>
   <div class="barra">
-    <a class="volver" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">‹ Menú</a>
+    <a class="volver" href="index.html">‹ Menú</a>
     <h1>Piedra, papel o tijera</h1>
     <span></span>
   </div>
@@ -86,11 +73,7 @@
   </div>
   <div id="ayuda"></div>
 
-  <div class="marcador">
-    <div class="casillero" id="casT"><div class="nombre">Tú</div><div class="puntos" id="puntosT">0</div></div>
-    <div class="casillero" id="casE"><div class="nombre">Empates</div><div class="puntos" id="puntosE">0</div></div>
-    <div class="casillero" id="casM"><div class="nombre">Móvil</div><div class="puntos" id="puntosM">0</div></div>
-  </div>
+  <div id="marcador"></div>
 
   <div class="arena" id="arena">
     <div class="lado"><div class="quien">Tú</div><div class="mano" id="manoT">✊</div></div>
@@ -112,6 +95,7 @@
   </div>
 </main>
 
+<script src="plataforma.js"></script>
 <script src="ppt.js"></script>
 <script src="ppt-interfaz.js"></script>
 </body>
