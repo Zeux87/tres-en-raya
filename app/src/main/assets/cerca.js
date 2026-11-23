@@ -283,7 +283,7 @@
 
       if (f === 'esperando') {
         caja.appendChild(h('div', { clase: 'cerca-espera' }, [h('span', { clase: 'cerca-giro' }), h('span', { texto: 'Esperando a que el otro móvil se una…' })]));
-        caja.appendChild(h('p', { texto: 'En el otro móvil, entra en este juego, elige "Dos móviles" y toca "Unirme a una partida". Te verá como ' }, [h('b', { texto: sala.nombre }), '.']));
+        caja.appendChild(h('p', { texto: 'En el otro móvil, entra en este mismo juego, elige jugar con otro móvil y toca "Unirme a una partida". Te verá como ' }, [h('b', { texto: sala.nombre }), '.']));
       } else if (f === 'buscando') {
         caja.appendChild(h('div', { clase: 'cerca-espera' }, [h('span', { clase: 'cerca-giro' }), h('span', { texto: sala.encontrados.length ? 'Partidas cerca:' : 'Buscando partidas cerca…' })]));
         if (sala.encontrados.length) {
@@ -291,7 +291,7 @@
             return h('button', { clase: 'boton secundario', texto: 'Jugar con ' + x.nombre, alClick: function () { sala.unirse(x.id); } });
           })));
         } else {
-          caja.appendChild(h('p', { texto: 'En el otro móvil, entra en este juego, elige "Dos móviles" y toca "Crear partida".' }));
+          caja.appendChild(h('p', { texto: 'En el otro móvil, entra en este mismo juego, elige jugar con otro móvil y toca "Crear partida".' }));
         }
       } else if (f === 'conectando' || f === 'saludando') {
         caja.appendChild(h('div', { clase: 'cerca-espera' }, [h('span', { clase: 'cerca-giro' }), h('span', { texto: 'Conectando' + (sala.rival ? ' con ' + sala.rival : '') + '…' })]));
