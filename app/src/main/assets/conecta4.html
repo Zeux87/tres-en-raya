@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Conecta 4</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --rojo: #e8455a;
+    --amarillo: #f5bd2e;
+    --panel: #2f5fd0;
+    --panel-borde: #2550b8;
+    --amarillo-texto: #c48a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --rojo: #ff5c70;
+      --amarillo: #ffcc4d;
+      --panel: #2a4aa6;
+      --panel-borde: #213d8c;
+      --amarillo-texto: #ffcc4d;
+    }
+  }
+  h1 .r { color: var(--rojo); }
+  h1 .a { color: var(--amarillo); }
+
+  .marcador {
+    display: grid;
+    grid-template-columns: 1fr .8fr 1fr;
+    gap: 10px;
+  }
+  .casillero {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 10px 6px;
+    text-align: center;
+    box-shadow: var(--sombra);
+    border: 2px solid transparent;
+    transition: border-color .25s, transform .25s;
+  }
+  .casillero .nombre {
+    font-size: 13px;
+    color: var(--suave);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .casillero .nombre i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .casillero .puntos { font-size: 28px; font-weight: 800; line-height: 1.2; }
+  #casR .nombre i { background: var(--rojo); }
+  #casA .nombre i { background: var(--amarillo); }
+  #casR .puntos { color: var(--rojo); }
+  #casA .puntos { color: var(--amarillo-texto); }
+  #casR.turno { border-color: var(--rojo); transform: translateY(-2px); }
+  #casA.turno { border-color: var(--amarillo); transform: translateY(-2px); }
+
+  #estado { text-align: center; font-size: 18px; font-weight: 700; min-height: 26px; }
+  #estado.gana-R { color: var(--rojo); }
+  #estado.gana-A { color: var(--amarillo-texto); }
+
+  /* Indicador de columna encima del tablero */
+  .flechas {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 10px;
+    height: 22px;
+  }
+  .flechas span {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .flechas span.ver { opacity: 1; }
+  .flechas span::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 11px solid var(--color-turno, var(--rojo));
+  }
+
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding: 10px;
+    background: var(--panel);
+    border-radius: 18px;
+    box-shadow: var(--sombra), inset 0 -5px 0 var(--panel-borde);
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+  .hueco {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--fondo);
+    position: relative;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, .22);
+  }
+  .ficha {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .18), inset 0 3px 0 rgba(255, 255, 255, .25);
+  }
+  .ficha.R { background: var(--rojo); }
+  .ficha.A { background: var(--amarillo); }
+  .ficha.cae { animation: caer var(--tiempo, .35s) cubic-bezier(.45, 0, 1, 1); }
+  @keyframes caer {
+    from { transform: translateY(calc(var(--filas) * -112%)); }
+    to { transform: translateY(0); }
+  }
+  .ficha.ganadora::after {
+    content: '';
+    position: absolute;
+    inset: 26%;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, .9);
+    animation: brillo 1s ease-in-out infinite alternate;
+  }
+  @keyframes brillo { from { opacity: .45; transform: scale(.85); } to { opacity: 1; transform: scale(1.05); } }
+  .tablero.terminado .ficha:not(.ganadora) { opacity: .45; transition: opacity .4s; }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">‹ Menú</a>
+    <h1>Conecta <span class="r">4</span></h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-modo="movil">Contra el móvil</button>
+    <button data-modo="dos">2 jugadores</button>
+  </div>
+
+  <div class="segmentos" id="dificultades">
+    <button data-dif="facil">Fácil</button>
+    <button data-dif="normal">Normal</button>
+    <button data-dif="dificil">Difícil</button>
+  </div>
+
+  <div class="marcador">
+    <div class="casillero" id="casR"><div class="nombre"><i></i><span id="nombreR">Tú</span></div><div class="puntos" id="puntosR">0</div></div>
+    <div class="casillero" id="casE"><div class="nombre">Empates</div><div class="puntos" id="puntosE">0</div></div>
+    <div class="casillero" id="casA"><div class="nombre"><i></i><span id="nombreA">Móvil</span></div><div class="puntos" id="puntosA">0</div></div>
+  </div>
+
+  <div id="estado"></div>
+
+  <div>
+    <div class="flechas" id="flechas"></div>
+    <div class="tablero" id="tablero"></div>
+  </div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="conecta4.js"></script>
+<script src="conecta4-interfaz.js"></script>
+</body>
+</html>

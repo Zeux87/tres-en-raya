@@ -1,11 +1,17 @@
 # Juegos
 
-App Android con dos juegos:
+App Android con tres juegos:
 
 **3 en raya**
 - Contra el móvil con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
 - 2 jugadores en el mismo móvil.
 - Marcador guardado por modo y dificultad; quien empieza se alterna en cada partida.
+
+**Conecta 4**
+- Tablero de 7 columnas × 6 filas; tocas una columna y la ficha cae.
+- Contra el móvil (tú rojas, el móvil amarillas) con tres niveles: Fácil, Normal y Difícil
+  (minimax con poda alfa-beta que profundiza mientras tiene tiempo, hasta ~1 s por jugada).
+- 2 jugadores en el mismo móvil. Marcador guardado y salida alterna, como en el 3 en raya.
 
 **Hundir la flota** (2 jugadores en el mismo móvil)
 - Tablero de 10×10 y 5 barcos: portaaviones (5), acorazado (4), crucero (3), submarino (3) y destructor (2).
@@ -24,7 +30,7 @@ Descarga `tres-en-raya.apk` de la [última versión](https://github.com/Zeux87/t
 
 Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), que:
 
-1. Pasa las pruebas de la lógica (`herramientas/pruebas.js` y `herramientas/pruebas-flota.js`).
+1. Pasa las pruebas de la lógica (`herramientas/pruebas.js`, `pruebas-conecta4.js` y `pruebas-flota.js`).
 2. Compila el APK firmado con `app/tresenraya.jks`, usando el número de compilación como `versionCode`.
 3. Lo publica en Releases como `v<número>`; la app detecta esa versión y se actualiza.
 
@@ -35,6 +41,7 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 | `app/src/main/assets/index.html` | Menú de inicio, versión y botón de actualizar |
 | `app/src/main/assets/comun.css` | Estilos compartidos (colores, botones, modo oscuro) |
 | `app/src/main/assets/tresenraya.html`, `interfaz.js`, `juego.js` | 3 en raya: pantalla, interfaz y lógica (minimax con poda alfa-beta) |
+| `app/src/main/assets/conecta4.html`, `conecta4-interfaz.js`, `conecta4.js` | Conecta 4: pantalla, interfaz y lógica con la IA |
 | `app/src/main/assets/flota.html`, `flota-interfaz.js`, `flota.js` | Hundir la flota: pantalla, interfaz y lógica |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
-| `herramientas/` | Pruebas de la lógica de los dos juegos |
+| `herramientas/` | Pruebas de la lógica de los tres juegos |
