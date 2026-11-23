@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Ahorcado</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --j1: #4b3fd6;
+    --j2: #e0752d;
+    --bien: #1fa39a;
+    --mal: #ef5b5b;
+    --madera: #8a6a4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --j1: #8b80ff;
+      --j2: #ff9a52;
+      --bien: #3fd0c4;
+      --mal: #ff7070;
+      --madera: #b08d6f;
+    }
+  }
+  h1 .a { color: var(--mal); }
+
+  #categorias button { font-size: 13px; padding: 9px 2px; }
+
+  .escena { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px 12px; }
+  .escena svg { width: 100%; max-width: 220px; height: auto; display: block; }
+  .escena .poste { stroke: var(--madera); stroke-width: 6; stroke-linecap: round; fill: none; }
+  .escena .cuerda { stroke: var(--suave); stroke-width: 3; stroke-linecap: round; }
+  .escena .parte { stroke: var(--texto); stroke-width: 5; stroke-linecap: round; fill: none; opacity: 0; transition: opacity .3s; }
+  .escena .parte.ver { opacity: 1; }
+  .escena.perdida .parte { stroke: var(--mal); }
+  .escena.ganada .parte.ver { stroke: var(--bien); }
+  .pista { font-size: 14px; color: var(--suave); text-align: center; min-height: 18px; }
+  .pista b { color: var(--texto); }
+
+  .palabra {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    min-height: 46px;
+  }
+  .palabra span {
+    width: min(9vw, 34px);
+    height: 44px;
+    border-bottom: 4px solid var(--rejilla);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: min(7vw, 26px);
+    font-weight: 800;
+  }
+  .palabra span.nueva { animation: salto .45s ease; }
+  .palabra span.faltaba { color: var(--mal); }
+  .palabra.ganada span { border-color: var(--bien); color: var(--bien); }
+
+  #estado.bien { color: var(--bien); }
+  #estado.mal { color: var(--mal); }
+  #estado.j1 { color: var(--j1); }
+  #estado.j2 { color: var(--j2); }
+
+  .teclado {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 5px;
+    touch-action: manipulation;
+  }
+  .teclado button {
+    border: 0;
+    border-radius: 9px;
+    padding: 11px 0;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    background: var(--tarjeta);
+    color: var(--texto);
+    box-shadow: var(--sombra);
+    transition: background .2s, color .2s, opacity .2s, transform .1s;
+  }
+  .teclado button:active { transform: scale(.94); }
+  .teclado button.bien { background: var(--bien); color: #fff; }
+  .teclado button.mal { background: var(--rejilla); color: var(--suave); opacity: .6; }
+  .teclado.parado button { pointer-events: none; }
+
+  /* Pantalla para escribir la palabra secreta (2 jugadores) */
+  .secreto { display: flex; flex-direction: column; gap: 12px; }
+  .secreto p { margin: 0; font-size: 15px; line-height: 1.45; }
+  .campo { display: flex; flex-direction: column; gap: 6px; }
+  .campo label { font-size: 13px; font-weight: 700; color: var(--suave); }
+  .campo .fila { display: flex; gap: 8px; }
+  .campo input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 18px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--rejilla);
+    background: var(--fondo);
+    color: var(--texto);
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .campo input:focus { outline: none; border-color: var(--acento); }
+  #secreta.tapada { -webkit-text-security: disc; }
+  .campo .ver {
+    border: 0;
+    border-radius: 12px;
+    padding: 0 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    background: var(--fondo);
+    color: var(--acento);
+  }
+  .error { color: var(--mal); font-size: 14px; font-weight: 600; min-height: 18px; margin-top: -4px; }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+</style>
+</head>
+<body>
+<main id="pantalla">
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Ahorca<span class="a">do</span></h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-valor="solo">Solo</button>
+    <button data-valor="dos">2 jugadores</button>
+  </div>
+
+  <div class="segmentos" id="categorias">
+    <button data-valor="todas">Todas</button>
+    <button data-valor="animales">Animales</button>
+    <button data-valor="comida">Comida</button>
+    <button data-valor="lugares">Lugares</button>
+    <button data-valor="cosas">Cosas</button>
+  </div>
+
+  <div id="marcador"></div>
+
+  <!-- Escribir la palabra (2 jugadores) -->
+  <div class="tarjeta secreto oculto" id="secreto">
+    <p id="textoSecreto"></p>
+    <div class="campo">
+      <label for="secreta">Palabra secreta</label>
+      <div class="fila">
+        <input id="secreta" class="tapada" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="14">
+        <button class="ver" id="verSecreta" type="button">Ver</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="pistaSecreta">Pista (opcional)</label>
+      <div class="fila"><input id="pistaSecreta" type="text" autocomplete="off" maxlength="30" placeholder="Por ejemplo: un animal"></div>
+    </div>
+    <div class="error" id="error"></div>
+    <button class="boton" id="empezar">Empezar</button>
+  </div>
+
+  <!-- Partida -->
+  <div id="juego">
+    <div class="tarjeta escena" id="escena">
+      <svg viewBox="0 0 200 170" aria-hidden="true">
+        <path class="poste" d="M20 160h90M45 160V12h80"/>
+        <path class="poste" d="M45 42l28-30" style="stroke-width:4"/>
+        <path class="cuerda" d="M125 12v20"/>
+        <circle class="parte" cx="125" cy="47" r="15"/>
+        <path class="parte" d="M125 62v45"/>
+        <path class="parte" d="M125 74l-22 18"/>
+        <path class="parte" d="M125 74l22 18"/>
+        <path class="parte" d="M125 107l-18 30"/>
+        <path class="parte" d="M125 107l18 30"/>
+      </svg>
+      <div class="pista" id="pista"></div>
+    </div>
+  </div>
+
+  <div class="palabra" id="palabra"></div>
+
+  <div class="estado" id="estado"></div>
+
+  <div class="teclado" id="teclado"></div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="ahorcado.js"></script>
+<script src="ahorcado-interfaz.js"></script>
+</body>
+</html>

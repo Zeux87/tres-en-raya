@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Memoria</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --j1: #4b3fd6;
+    --j2: #e0752d;
+    --dorso: #7a4fd6;
+    --dorso-2: #9a73ee;
+    --acierto: #1fa39a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --j1: #8b80ff;
+      --j2: #ff9a52;
+      --dorso: #5b3aa8;
+      --dorso-2: #7350c4;
+      --acierto: #3fd0c4;
+    }
+  }
+  h1 .m { color: var(--dorso-2); }
+
+  .dos .casillero .nombre { font-size: 12px; white-space: nowrap; }
+
+  #estado.bien { color: var(--acierto); }
+  #estado.j1 { color: var(--j1); }
+  #estado.j2 { color: var(--j2); }
+
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 4), 1fr);
+    gap: 8px;
+    touch-action: manipulation;
+  }
+  .carta {
+    aspect-ratio: 3 / 4;
+    perspective: 600px;
+    border: 0;
+    padding: 0;
+    background: none;
+    font: inherit;
+  }
+  .cara {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transition: transform .35s ease;
+  }
+  .interior { position: relative; width: 100%; height: 100%; display: block; }
+  .dorso {
+    background: linear-gradient(135deg, var(--dorso), var(--dorso-2));
+    box-shadow: var(--sombra), inset 0 -4px 0 rgba(0, 0, 0, .15);
+  }
+  .dorso::after {
+    content: '';
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, .35);
+  }
+  .frente {
+    background: var(--tarjeta);
+    box-shadow: var(--sombra);
+    transform: rotateY(180deg);
+    font-size: clamp(26px, 9vw, 40px);
+    border: 2px solid transparent;
+  }
+  .cinco .frente { font-size: clamp(22px, 7.5vw, 34px); }
+  .carta.arriba .dorso { transform: rotateY(-180deg); }
+  .carta.arriba .frente { transform: rotateY(0); }
+  .carta.hecha .frente { border-color: var(--acierto); }
+  .dos .carta.hecha.de1 .frente { border-color: var(--j1); }
+  .dos .carta.hecha.de2 .frente { border-color: var(--j2); }
+  .carta.hecha .frente { animation: salto .45s ease; }
+  .carta.mal .frente { animation: temblar .4s ease; }
+  @keyframes temblar {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+</style>
+</head>
+<body>
+<main id="pantalla">
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1><span class="m">Memoria</span></h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-valor="solo">Solo</button>
+    <button data-valor="dos">2 jugadores</button>
+  </div>
+
+  <div class="segmentos" id="niveles">
+    <button data-valor="facil">Fácil</button>
+    <button data-valor="normal">Normal</button>
+    <button data-valor="dificil">Difícil</button>
+  </div>
+
+  <div id="marcador"></div>
+
+  <div class="estado" id="estado"></div>
+
+  <div class="tablero" id="tablero"></div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="memoria.js"></script>
+<script src="memoria-interfaz.js"></script>
+</body>
+</html>
