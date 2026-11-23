@@ -5,25 +5,18 @@
   'use strict';
 
   var A = window.Ahorcado;
-  var Android = window.Android;
+  var P = window.Plataforma;
 
-  var CLAVE = 'ahorcado.v1';
+  var almacen = P.almacen('ahorcado'); // ajustes, marcadores y palabras recientes en "ahorcado.v1"
+  var guardada = P.partida('ahorcado'); // partida a medias en "ahorcado.partida"
   var RECIENTES = 25; // palabras que no se repiten seguidas
   var datos = cargar();
 
-  var partida = null, teclas = {}, escribe = 1, terminada = false;
+  var partida = null, teclas = {}, escribe = 1, terminada = false, mc = null;
 
   var el = {
     pantalla: document.getElementById('pantalla'),
-    modos: document.getElementById('modos'),
-    categorias: document.getElementById('categorias'),
-    cas1: document.getElementById('cas1'),
-    cas3: document.getElementById('cas3'),
-    nombre1: document.getElementById('nombre1'),
-    nombre3: document.getElementById('nombre3'),
-    valor1: document.getElementById('valor1'),
-    valor2: document.getElementById('valor2'),
-    valor3: document.getElementById('valor3'),
+    marcador: document.getElementById('marcador'),
     secreto: document.getElementById('secreto'),
     textoSecreto: document.getElementById('textoSecreto'),
     secreta: document.getElementById('secreta'),
@@ -39,10 +32,21 @@
     teclado: document.getElementById('teclado')
   };
 
+  var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    datos.modo = m;
+    guardar();
+    escribe = 1;
+    nuevaPartida();
+  });
+  var categorias = P.segmentos(document.getElementById('categorias'), datos.categoria, function (c) {
+    datos.categoria = c;
+    guardar();
+    nuevaPartida();
+  });
+
   // ---------- Persistencia ----------
   function cargar() {
-    var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
+    var d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (d.modo !== 'solo' && d.modo !== 'dos') d.modo = 'solo';
     if (d.categoria !== 'todas' && !A.CATEGORIAS[d.categoria]) d.categoria = 'todas';
@@ -51,27 +55,21 @@
     if (!Array.isArray(d.recientes)) d.recientes = [];
     return d;
   }
-  function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
+  function guardar() { almacen.escribir('v1', datos); }
+
+  // La partida a medias se guarda tras cada letra y se borra al terminar
+  function guardarPartida() {
+    if (!partida || terminada || !partida.probadas.length) return guardada.borrar();
+    guardada.guardar({ modo: datos.modo, partida: partida, escribe: escribe });
   }
 
   // ---------- Utilidades ----------
   function solo() { return datos.modo === 'solo'; }
   function adivina() { return escribe === 1 ? 2 : 1; }
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
-  function saltar(nodo) {
-    nodo.classList.remove('salto');
-    void nodo.offsetWidth;
-    nodo.classList.add('salto');
-  }
+  var vibrar = P.vibrar;
   function ponerEstado(texto, clase) {
     el.estado.textContent = texto;
-    el.estado.className = clase || '';
+    el.estado.className = 'estado' + (clase ? ' ' + clase : '');
   }
 
   // ---------- Pintado ----------
@@ -88,28 +86,20 @@
   }
 
   function pintarAjustes() {
-    var bm = el.modos.querySelectorAll('button');
-    for (var i = 0; i < bm.length; i++) bm[i].classList.toggle('activo', bm[i].getAttribute('data-modo') === datos.modo);
-    var bc = el.categorias.querySelectorAll('button');
-    for (var j = 0; j < bc.length; j++) bc[j].classList.toggle('activo', bc[j].getAttribute('data-cat') === datos.categoria);
-    el.categorias.classList.toggle('oculto', !solo());
+    modos.poner(datos.modo);
+    categorias.poner(datos.categoria);
+    categorias.ver(solo());
     el.pantalla.classList.toggle('dos', !solo());
-    el.nombre1.textContent = solo() ? 'Ganadas' : 'Jugador 1';
-    el.nombre3.textContent = solo() ? 'Perdidas' : 'Jugador 2';
+    mc = P.marcador(el.marcador, solo()
+      ? [{ id: '1', nombre: 'Ganadas', color: 'var(--bien)' }, { id: 'F', nombre: 'Fallos' }, { id: '2', nombre: 'Perdidas', color: 'var(--mal)' }]
+      : [{ id: '1', nombre: 'Jugador 1', color: 'var(--j1)' }, { id: 'F', nombre: 'Fallos' }, { id: '2', nombre: 'Jugador 2', color: 'var(--j2)' }]);
   }
 
   function pintarMarcador() {
-    if (solo()) {
-      el.valor1.textContent = datos.solo.ganadas;
-      el.valor3.textContent = datos.solo.perdidas;
-    } else {
-      el.valor1.textContent = datos.dos[1];
-      el.valor3.textContent = datos.dos[2];
-    }
-    el.valor2.textContent = (partida ? partida.fallos : 0) + '/' + A.MAX_FALLOS;
-    var jugando = !solo() && partida && !terminada;
-    el.cas1.classList.toggle('turno', jugando && adivina() === 1);
-    el.cas3.classList.toggle('turno', jugando && adivina() === 2);
+    var f = (partida ? partida.fallos : 0) + '/' + A.MAX_FALLOS;
+    if (solo()) mc.pintar({ 1: datos.solo.ganadas, F: f, 2: datos.solo.perdidas });
+    else mc.pintar({ 1: datos.dos[1], F: f, 2: datos.dos[2] });
+    mc.turno(!solo() && partida && !terminada ? String(adivina()) : null);
   }
 
   function pintarDibujo() {
@@ -163,6 +153,7 @@
       datos.recientes.push(e.palabra);
       if (datos.recientes.length > RECIENTES) datos.recientes = datos.recientes.slice(-RECIENTES);
       guardar();
+      guardada.borrar();
       empezar(e.palabra, A.CATEGORIAS[e.categoria].nombre);
     } else {
       pedirPalabra();
@@ -181,13 +172,14 @@
     el.secreta.classList.add('tapada');
     el.verSecreta.textContent = 'Ver';
     el.error.textContent = '';
+    guardada.borrar();
     ponerEstado('');
     pintarDibujo();
     pintarMarcador();
   }
 
-  function empezar(palabra, pista) {
-    partida = A.nueva(palabra, pista);
+  function empezar(palabra, pista, recuperada) {
+    partida = recuperada || A.nueva(palabra, pista);
     el.secreto.classList.add('oculto');
     el.juego.classList.remove('oculto');
     el.teclado.classList.remove('oculto');
@@ -198,6 +190,26 @@
     pintarPalabra();
     pintarMarcador();
     pintarTurno();
+    if (recuperada) {
+      partida.probadas.forEach(function (l) {
+        if (teclas[l]) teclas[l].classList.add(A.mascara(partida).some(function (x) { return x && A.normalizar(x) === l; }) ? 'bien' : 'mal');
+      });
+      ponerEstado('Partida recuperada');
+    }
+  }
+
+  // Recupera la partida a medias si es del modo actual
+  function recuperar() {
+    var g = guardada.cargar();
+    var p = g && g.partida;
+    if (!p || g.modo !== datos.modo || typeof p.palabra !== 'string' || !Array.isArray(p.probadas)) return false;
+    if (A.resultado(p)) return false;
+    escribe = g.escribe === 2 ? 2 : 1;
+    terminada = false;
+    crearTeclado();
+    pintarAjustes();
+    empezar(p.palabra, p.pista, p);
+    return true;
   }
 
   function probar(letra) {
@@ -210,6 +222,7 @@
       vibrar(30);
       return;
     }
+    guardarPartida();
     var t = teclas[base];
     if (t) t.classList.add(r === 'acierto' ? 'bien' : 'mal');
     pintarDibujo();
@@ -231,6 +244,7 @@
 
   function finPartida(fin) {
     terminada = true;
+    guardada.borrar();
     el.teclado.classList.add('parado');
     el.escena.classList.add(fin === 'gana' ? 'ganada' : 'perdida');
     if (solo()) {
@@ -240,13 +254,13 @@
         s.racha++;
         if (s.racha > s.mejorRacha) s.mejorRacha = s.racha;
         ponerEstado('¡Acertaste! 🎉 Racha: ' + s.racha + (s.racha === s.mejorRacha && s.racha > 1 ? ' (récord)' : ''), 'bien');
-        saltar(el.cas1);
+        mc.saltar('1');
         vibrar(220);
       } else {
         s.perdidas++;
         s.racha = 0;
         ponerEstado('Ahorcado. Era «' + partida.palabra + '»', 'mal');
-        saltar(el.cas3);
+        mc.saltar('2');
         vibrar(90);
       }
     } else {
@@ -255,7 +269,7 @@
       ponerEstado(fin === 'gana'
         ? '¡El jugador ' + g + ' la ha adivinado! 🎉'
         : 'Ahorcado. Punto para el jugador ' + g, 'j' + g);
-      saltar(g === 1 ? el.cas1 : el.cas3);
+      mc.saltar(String(g));
       vibrar(220);
       escribe = adivina(); // la próxima escribe el otro
     }
@@ -299,23 +313,6 @@
     el.verSecreta.textContent = tapada ? 'Ver' : 'Ocultar';
   });
 
-  el.modos.addEventListener('click', function (e) {
-    var m = e.target.getAttribute && e.target.getAttribute('data-modo');
-    if (!m || m === datos.modo) return;
-    datos.modo = m;
-    guardar();
-    escribe = 1;
-    nuevaPartida();
-  });
-
-  el.categorias.addEventListener('click', function (e) {
-    var c = e.target.getAttribute && e.target.getAttribute('data-cat');
-    if (!c || c === datos.categoria) return;
-    datos.categoria = c;
-    guardar();
-    nuevaPartida();
-  });
-
   document.getElementById('nueva').addEventListener('click', nuevaPartida);
 
   document.getElementById('borrar').addEventListener('click', function () {
@@ -325,5 +322,5 @@
     pintarMarcador();
   });
 
-  nuevaPartida();
+  if (!recuperar()) nuevaPartida();
 })();

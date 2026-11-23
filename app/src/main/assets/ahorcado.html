@@ -26,29 +26,6 @@
 
   #categorias button { font-size: 13px; padding: 9px 2px; }
 
-  .marcador {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-  }
-  .casillero {
-    background: var(--tarjeta);
-    border-radius: 14px;
-    padding: 10px 6px;
-    text-align: center;
-    box-shadow: var(--sombra);
-    border: 2px solid transparent;
-    transition: border-color .25s, transform .25s;
-  }
-  .casillero .nombre { font-size: 13px; color: var(--suave); font-weight: 600; }
-  .casillero .puntos { font-size: 26px; font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; }
-  #cas1 .puntos { color: var(--bien); }
-  #cas3 .puntos { color: var(--mal); }
-  .dos #cas1 .puntos { color: var(--j1); }
-  .dos #cas3 .puntos { color: var(--j2); }
-  .dos #cas1.turno { border-color: var(--j1); transform: translateY(-2px); }
-  .dos #cas3.turno { border-color: var(--j2); transform: translateY(-2px); }
-
   .escena { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 14px 12px; }
   .escena svg { width: 100%; max-width: 220px; height: auto; display: block; }
   .escena .poste { stroke: var(--madera); stroke-width: 6; stroke-linecap: round; fill: none; }
@@ -81,7 +58,6 @@
   .palabra span.faltaba { color: var(--mal); }
   .palabra.ganada span { border-color: var(--bien); color: var(--bien); }
 
-  #estado { text-align: center; font-size: 18px; font-weight: 700; min-height: 26px; }
   #estado.bien { color: var(--bien); }
   #estado.mal { color: var(--mal); }
   #estado.j1 { color: var(--j1); }
@@ -148,29 +124,25 @@
 <body>
 <main id="pantalla">
   <div class="barra">
-    <a class="volver" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">‹ Menú</a>
+    <a class="volver" href="index.html">‹ Menú</a>
     <h1>Ahorca<span class="a">do</span></h1>
     <span></span>
   </div>
 
   <div class="segmentos" id="modos">
-    <button data-modo="solo">Solo</button>
-    <button data-modo="dos">2 jugadores</button>
+    <button data-valor="solo">Solo</button>
+    <button data-valor="dos">2 jugadores</button>
   </div>
 
   <div class="segmentos" id="categorias">
-    <button data-cat="todas">Todas</button>
-    <button data-cat="animales">Animales</button>
-    <button data-cat="comida">Comida</button>
-    <button data-cat="lugares">Lugares</button>
-    <button data-cat="cosas">Cosas</button>
+    <button data-valor="todas">Todas</button>
+    <button data-valor="animales">Animales</button>
+    <button data-valor="comida">Comida</button>
+    <button data-valor="lugares">Lugares</button>
+    <button data-valor="cosas">Cosas</button>
   </div>
 
-  <div class="marcador">
-    <div class="casillero" id="cas1"><div class="nombre" id="nombre1"></div><div class="puntos" id="valor1">0</div></div>
-    <div class="casillero" id="cas2"><div class="nombre">Fallos</div><div class="puntos" id="valor2">0</div></div>
-    <div class="casillero" id="cas3"><div class="nombre" id="nombre3"></div><div class="puntos" id="valor3">0</div></div>
-  </div>
+  <div id="marcador"></div>
 
   <!-- Escribir la palabra (2 jugadores) -->
   <div class="tarjeta secreto oculto" id="secreto">
@@ -210,7 +182,7 @@
 
   <div class="palabra" id="palabra"></div>
 
-  <div id="estado"></div>
+  <div class="estado" id="estado"></div>
 
   <div class="teclado" id="teclado"></div>
 
@@ -220,6 +192,7 @@
   </div>
 </main>
 
+<script src="plataforma.js"></script>
 <script src="ahorcado.js"></script>
 <script src="ahorcado-interfaz.js"></script>
 </body>

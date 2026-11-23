@@ -97,5 +97,33 @@
       '<rect x="7" y="40" width="29" height="29" rx="5" fill="#f65e3b"/>' +
       '<rect x="40" y="40" width="29" height="29" rx="5" fill="#edc22e"/>' +
       '<g font-family="sans-serif" font-weight="800" text-anchor="middle"><text x="21.5" y="27" font-size="16" fill="#776e65">2</text><text x="54.5" y="27" font-size="16" fill="#fff">8</text><text x="21.5" y="60" font-size="14" fill="#fff">64</text><text x="54.5" y="59" font-size="10" fill="#fff">2048</text></g>'
+  },
+  {
+    id: 'memoria',
+    pagina: 'memoria.html',
+    titulo: 'Memoria',
+    texto: 'Encuentra las parejas, solo (3 niveles) o a dos jugadores',
+    icono:
+      '<rect width="76" height="76" fill="#6a45c9"/>' +
+      '<rect x="10" y="12" width="24" height="30" rx="5" fill="#9a73ee"/>' +
+      '<circle cx="22" cy="27" r="6" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2.5"/>' +
+      '<rect x="42" y="12" width="24" height="30" rx="5" fill="#fff"/>' +
+      '<circle cx="54" cy="27" r="7" fill="#ef5b5b"/>' +
+      '<path d="M54 20c1-3 3-4 5-4" stroke="#1fa39a" stroke-width="2.5" stroke-linecap="round" fill="none"/>' +
+      '<rect x="10" y="48" width="24" height="18" rx="5" fill="#fff" opacity=".95"/>' +
+      '<circle cx="22" cy="57" r="5" fill="#ef5b5b"/>' +
+      '<rect x="42" y="48" width="24" height="18" rx="5" fill="#9a73ee"/>'
+  },
+  {
+    id: 'ahorcado',
+    pagina: 'ahorcado.html',
+    titulo: 'Ahorcado',
+    texto: 'Adivina palabras en español, solo o a dos jugadores',
+    icono:
+      '<rect width="76" height="76" fill="#2f8a6e"/>' +
+      '<path d="M14 64h30M24 64V12h28M24 22l10-10" stroke="#e9d8c4" stroke-width="4" stroke-linecap="round" fill="none"/>' +
+      '<path d="M52 12v8" stroke="#fff" stroke-opacity=".7" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<circle cx="52" cy="26" r="6" fill="none" stroke="#fff" stroke-width="3"/>' +
+      '<path d="M52 32v15M52 37l-7 6M52 37l7 6M52 47l-6 10M52 47l6 10" stroke="#fff" stroke-width="3" stroke-linecap="round"/>'
   }
 ]);

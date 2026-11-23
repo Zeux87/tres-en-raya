@@ -5,53 +5,54 @@
   'use strict';
 
   var M = window.Memoria;
-  var Android = window.Android;
+  var P = window.Plataforma;
 
-  var CLAVE = 'memoria.v1';
+  var almacen = P.almacen('memoria'); // ajustes, récords y victorias en "memoria.v1"
+  var guardada = P.partida('memoria'); // partida a medias en "memoria.partida"
   var datos = cargar();
 
   var partida, cartas = [], ficha = 0, bloqueo = false;
-  var inicio = 0, reloj = null, empieza = 1;
+  var inicio = 0, reloj = null, empieza = 1, mc = null;
 
   var el = {
     pantalla: document.getElementById('pantalla'),
     tablero: document.getElementById('tablero'),
     estado: document.getElementById('estado'),
-    modos: document.getElementById('modos'),
-    niveles: document.getElementById('niveles'),
-    cas: [null, document.getElementById('cas1'), document.getElementById('cas2'), document.getElementById('cas3')],
-    nombre: [null, document.getElementById('nombre1'), document.getElementById('nombre2'), document.getElementById('nombre3')],
-    valor: [null, document.getElementById('valor1'), document.getElementById('valor2'), document.getElementById('valor3')]
+    marcador: document.getElementById('marcador')
   };
+
+  var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    datos.modo = m;
+    cambiarAjustes();
+  });
+  var niveles = P.segmentos(document.getElementById('niveles'), datos.nivel, function (n) {
+    datos.nivel = n;
+    cambiarAjustes();
+  });
 
   // ---------- Persistencia ----------
   function cargar() {
-    var d = null;
-    try { d = JSON.parse(localStorage.getItem(CLAVE)); } catch (e) { d = null; }
+    var d = almacen.leer('v1', null);
     if (!d || typeof d !== 'object') d = {};
     if (d.modo !== 'solo' && d.modo !== 'dos') d.modo = 'solo';
     if (!M.NIVELES[d.nivel]) d.nivel = 'normal';
     if (!d.records || typeof d.records !== 'object') d.records = {};
-    if (!d.victorias || typeof d.victorias !== 'object') d.victorias = { 1: 0, 2: 0, E: 0 };
+    if (!d.victorias || typeof d.victorias !== 'object') d.victorias = {};
+    P.marcadorDe(d, 'victorias', ['1', '2', 'E']);
     return d;
   }
-  function guardar() {
-    try { localStorage.setItem(CLAVE, JSON.stringify(datos)); } catch (e) { /* sin almacenamiento */ }
+  function guardar() { almacen.escribir('v1', datos); }
+
+  // La partida a medias se guarda tras cada jugada y se borra al terminar
+  function guardarPartida() {
+    if (!partida || M.terminada(partida)) return guardada.borrar();
+    if (!partida.intentos && !partida.arriba.length) return guardada.borrar(); // sin empezar
+    guardada.guardar({ modo: datos.modo, nivel: datos.nivel, estado: partida, segundos: segundos(), empieza: empieza });
   }
 
   // ---------- Utilidades ----------
   function solo() { return datos.modo === 'solo'; }
-  function vibrar(ms) {
-    try {
-      if (Android && Android.vibrar) Android.vibrar(ms);
-      else if (navigator.vibrate) navigator.vibrate(ms);
-    } catch (e) { /* nada */ }
-  }
-  function saltar(nodo) {
-    nodo.classList.remove('salto');
-    void nodo.offsetWidth;
-    nodo.classList.add('salto');
-  }
+  var vibrar = P.vibrar;
   function segundos() { return inicio ? Math.floor((Date.now() - inicio) / 1000) : 0; }
   function mmss(s) {
     var m = Math.floor(s / 60), r = s % 60;
@@ -59,7 +60,11 @@
   }
   function ponerEstado(texto, clase) {
     el.estado.textContent = texto;
-    el.estado.className = clase || '';
+    el.estado.className = 'estado' + (clase ? ' ' + clase : '');
+  }
+  function arrancarReloj() {
+    pararReloj();
+    if (solo()) reloj = setInterval(pintarMarcador, 1000);
   }
   function pararReloj() {
     if (reloj) clearInterval(reloj);
@@ -67,40 +72,28 @@
   }
 
   // ---------- Pintado ----------
+  function crearMarcador() {
+    mc = P.marcador(el.marcador, solo()
+      ? [{ id: 'intentos', nombre: 'Intentos' }, { id: 'tiempo', nombre: 'Tiempo' }, { id: 'record', nombre: 'Récord' }]
+      : [{ id: '1', nombre: 'Jugador 1', color: 'var(--j1)' }, { id: 'Q', nombre: 'Quedan' }, { id: '2', nombre: 'Jugador 2', color: 'var(--j2)' }]);
+  }
+
   function pintarAjustes() {
-    var bm = el.modos.querySelectorAll('button');
-    for (var i = 0; i < bm.length; i++) bm[i].classList.toggle('activo', bm[i].getAttribute('data-modo') === datos.modo);
-    var bn = el.niveles.querySelectorAll('button');
-    for (var j = 0; j < bn.length; j++) bn[j].classList.toggle('activo', bn[j].getAttribute('data-nivel') === datos.nivel);
+    modos.poner(datos.modo);
+    niveles.poner(datos.nivel);
     el.pantalla.classList.toggle('dos', !solo());
-    if (solo()) {
-      el.nombre[1].textContent = 'Intentos';
-      el.nombre[2].textContent = 'Tiempo';
-      el.nombre[3].textContent = 'Récord';
-    } else {
-      el.nombre[1].textContent = 'Jugador 1';
-      el.nombre[2].textContent = 'Quedan';
-      el.nombre[3].textContent = 'Jugador 2';
-    }
+    crearMarcador();
   }
 
   function pintarMarcador() {
     if (solo()) {
       var r = datos.records[datos.nivel];
-      el.valor[1].textContent = partida.intentos;
-      el.valor[2].textContent = mmss(segundos());
-      el.valor[3].textContent = r ? r.intentos : '–';
-      for (var i = 1; i <= 3; i++) el.cas[i].classList.remove('turno');
+      mc.pintar({ intentos: partida.intentos, tiempo: mmss(segundos()), record: r ? r.intentos : '–' });
     } else {
       // Las victorias acumuladas van junto al nombre
-      el.nombre[1].textContent = 'Jugador 1 🏆' + datos.victorias[1];
-      el.nombre[3].textContent = 'Jugador 2 🏆' + datos.victorias[2];
-      el.valor[1].textContent = partida.puntos[1];
-      el.valor[2].textContent = partida.cartas.length / 2 - partida.parejas;
-      el.valor[3].textContent = partida.puntos[2];
-      var fin = M.terminada(partida);
-      el.cas[1].classList.toggle('turno', !fin && partida.turno === 1);
-      el.cas[3].classList.toggle('turno', !fin && partida.turno === 2);
+      mc.nombres({ 1: 'Jugador 1 🏆' + datos.victorias[1], 2: 'Jugador 2 🏆' + datos.victorias[2] });
+      mc.pintar({ 1: partida.puntos[1], Q: String(partida.cartas.length / 2 - partida.parejas), 2: partida.puntos[2] });
+      mc.turno(M.terminada(partida) ? null : String(partida.turno));
     }
   }
 
@@ -129,26 +122,53 @@
       dentro.appendChild(dorso);
       dentro.appendChild(frente);
       b.appendChild(dentro);
+      if (partida.encontradas[i]) b.classList.add('arriba', 'hecha', 'de' + partida.dueno[i]);
+      else if (partida.arriba.indexOf(i) >= 0) b.classList.add('arriba');
       el.tablero.appendChild(b);
       cartas.push(b);
     }
   }
 
   // ---------- Juego ----------
+  function mostrar() {
+    bloqueo = false;
+    pintarAjustes();
+    crearTablero();
+    pintarMarcador();
+    pintarTurno();
+  }
+
   function nuevaPartida() {
     ficha++; // invalida temporizadores pendientes
     pararReloj();
     inicio = 0;
-    bloqueo = false;
     partida = M.nueva(datos.nivel, solo() ? 1 : 2);
     if (!solo()) {
       partida.turno = empieza;
       empieza = empieza === 1 ? 2 : 1; // la próxima empieza el otro
     }
-    pintarAjustes();
-    crearTablero();
-    pintarMarcador();
-    pintarTurno();
+    guardada.borrar();
+    mostrar();
+  }
+
+  // Recupera la partida a medias si es del modo y nivel actuales
+  function recuperar() {
+    var g = guardada.cargar();
+    if (!g || g.modo !== datos.modo || g.nivel !== datos.nivel || !g.estado || !Array.isArray(g.estado.cartas)) return false;
+    partida = g.estado;
+    if (partida.arriba.length === 2) M.tapar(partida); // se cerró justo tras un fallo
+    empieza = g.empieza === 2 ? 2 : 1;
+    inicio = Date.now() - (g.segundos || 0) * 1000;
+    mostrar();
+    arrancarReloj();
+    ponerEstado('Partida recuperada');
+    return true;
+  }
+
+  function cambiarAjustes() {
+    guardar();
+    empieza = 1;
+    nuevaPartida();
   }
 
   el.tablero.addEventListener('click', function (e) {
@@ -161,7 +181,7 @@
 
     if (!inicio) {
       inicio = Date.now();
-      if (solo()) reloj = setInterval(pintarMarcador, 1000);
+      arrancarReloj();
     }
     c.classList.add('arriba');
     c.classList.remove('mal');
@@ -175,8 +195,10 @@
       if (M.terminada(partida)) return finPartida();
       ponerEstado(solo() ? '¡Pareja!' : '¡Pareja! Repite el jugador ' + partida.turno, solo() ? 'bien' : 'j' + partida.turno);
       vibrar(40);
+      guardarPartida();
     } else if (r === 'fallo') {
       pintarMarcador();
+      guardarPartida();
       bloqueo = true;
       var mia = ficha;
       var par = partida.arriba.slice();
@@ -191,54 +213,35 @@
         bloqueo = false;
         pintarMarcador();
         pintarTurno();
+        guardarPartida();
       }, 1050);
     }
   });
 
   function finPartida() {
     pararReloj();
+    guardada.borrar();
     var r = M.resultado(partida);
     if (solo()) {
       var nuevo = { intentos: r.intentos, segundos: segundos() };
       var record = M.mejorRecord(datos.records[datos.nivel], nuevo);
       if (record) datos.records[datos.nivel] = nuevo;
       ponerEstado((record ? '¡Nuevo récord! ' : '¡Completado! ') + r.intentos + ' intentos en ' + mmss(nuevo.segundos) + ' 🎉', 'bien');
-      if (record) saltar(el.cas[3]);
-      vibrar(220);
+      if (record) mc.saltar('record');
+    } else if (r.ganador) {
+      datos.victorias[r.ganador]++;
+      ponerEstado('¡Gana el jugador ' + r.ganador + '! 🎉 (' + r.puntos[0] + ' a ' + r.puntos[1] + ')', 'j' + r.ganador);
+      mc.saltar(String(r.ganador));
     } else {
-      if (r.ganador) {
-        datos.victorias[r.ganador]++;
-        ponerEstado('¡Gana el jugador ' + r.ganador + '! 🎉 (' + r.puntos[0] + ' a ' + r.puntos[1] + ')', 'j' + r.ganador);
-        saltar(el.cas[r.ganador === 1 ? 1 : 3]);
-      } else {
-        datos.victorias.E++;
-        ponerEstado('Empate a ' + r.puntos[0] + ' parejas');
-      }
-      vibrar(220);
+      datos.victorias.E++;
+      ponerEstado('Empate a ' + r.puntos[0] + ' parejas');
     }
+    vibrar(220);
     guardar();
     pintarMarcador();
   }
 
   // ---------- Controles ----------
-  el.modos.addEventListener('click', function (e) {
-    var m = e.target.getAttribute && e.target.getAttribute('data-modo');
-    if (!m || m === datos.modo) return;
-    datos.modo = m;
-    guardar();
-    empieza = 1;
-    nuevaPartida();
-  });
-
-  el.niveles.addEventListener('click', function (e) {
-    var n = e.target.getAttribute && e.target.getAttribute('data-nivel');
-    if (!n || n === datos.nivel) return;
-    datos.nivel = n;
-    guardar();
-    empieza = 1;
-    nuevaPartida();
-  });
-
   document.getElementById('nueva').addEventListener('click', nuevaPartida);
 
   document.getElementById('borrar').addEventListener('click', function () {
@@ -248,5 +251,10 @@
     pintarMarcador();
   });
 
-  nuevaPartida();
+  // Al salir de la app se guarda el tiempo jugado
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && partida && !bloqueo) guardarPartida();
+  });
+
+  if (!recuperar()) nuevaPartida();
 })();
