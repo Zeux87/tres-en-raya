@@ -1,6 +1,6 @@
 # Juegos
 
-App Android con tres juegos:
+App Android con siete juegos:
 
 **3 en raya**
 - Contra el móvil con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
@@ -19,6 +19,22 @@ App Android con tres juegos:
 - Si aciertas, vuelves a disparar; si es agua, pasas el móvil. Al hundir un barco se marca el agua de alrededor.
 - Pantalla tapada para pasar el móvil sin ver la flota del otro, partida guardada si se cierra la app, estadísticas y victorias por jugador.
 
+**Piedra, papel o tijera**
+- Contra el móvil: «Al azar» o «Listo», que se fija en lo que sueles sacar tras tus últimas jugadas e intenta adelantarse.
+- Marcador y mejor racha guardados por nivel.
+
+**Buscaminas**
+- Tres tamaños: Fácil (8×10, 10 minas), Normal (10×14, 24) y Difícil (12×16, 40). El primer toque nunca es mina.
+- Banderas con el botón 🚩 o manteniendo pulsado; tocar un número con sus banderas puestas abre lo de alrededor.
+- Récord de tiempo por nivel y partida guardada si sales.
+
+**Snake**
+- Tres velocidades, que aumentan un poco según comes. Se gira deslizando el dedo o con las flechas.
+- Récord por velocidad; se pone en pausa y se guarda si sales de la app.
+
+**2048**
+- Desliza para mover; dos fichas iguales se juntan. Récord, deshacer el último movimiento y partida guardada.
+
 Además: tema claro/oscuro automático, vibración y **actualización automática** desde Releases.
 
 ## Instalar
@@ -30,7 +46,7 @@ Descarga `tres-en-raya.apk` de la [última versión](https://github.com/Zeux87/t
 
 Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), que:
 
-1. Pasa las pruebas de la lógica (`herramientas/pruebas.js`, `pruebas-conecta4.js` y `pruebas-flota.js`).
+1. Pasa las pruebas de la lógica de cada juego (`herramientas/pruebas*.js`).
 2. Compila el APK firmado con `app/tresenraya.jks`, usando el número de compilación como `versionCode`.
 3. Lo publica en Releases como `v<número>`; la app detecta esa versión y se actualiza.
 
@@ -43,5 +59,9 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 | `app/src/main/assets/tresenraya.html`, `interfaz.js`, `juego.js` | 3 en raya: pantalla, interfaz y lógica (minimax con poda alfa-beta) |
 | `app/src/main/assets/conecta4.html`, `conecta4-interfaz.js`, `conecta4.js` | Conecta 4: pantalla, interfaz y lógica con la IA |
 | `app/src/main/assets/flota.html`, `flota-interfaz.js`, `flota.js` | Hundir la flota: pantalla, interfaz y lógica |
+| `app/src/main/assets/ppt.html`, `ppt-interfaz.js`, `ppt.js` | Piedra, papel o tijera |
+| `app/src/main/assets/buscaminas.html`, `buscaminas-interfaz.js`, `buscaminas.js` | Buscaminas |
+| `app/src/main/assets/snake.html`, `snake-interfaz.js`, `snake.js` | Snake |
+| `app/src/main/assets/2048.html`, `2048-interfaz.js`, `2048.js` | 2048 |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
-| `herramientas/` | Pruebas de la lógica de los tres juegos |
+| `herramientas/` | Pruebas de la lógica de los juegos |
