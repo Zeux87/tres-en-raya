@@ -1,6 +1,6 @@
 # Juegos
 
-App Android con siete juegos:
+App Android con nueve juegos:
 
 **3 en raya**
 - Contra el móvil con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
@@ -35,6 +35,16 @@ App Android con siete juegos:
 **2048**
 - Desliza para mover; dos fichas iguales se juntan. Récord, deshacer el último movimiento y partida guardada.
 
+**Memoria** (parejas)
+- Tres niveles: Fácil (12 cartas), Normal (16) y Difícil (20).
+- Solo: cronómetro e intentos, con récord guardado por nivel (menos intentos; a igualdad, menos tiempo).
+- 2 jugadores: si encuentras pareja repites turno; gana quien tenga más parejas. Victorias guardadas.
+
+**Ahorcado** (palabras en español)
+- Solo: el móvil elige entre 137 palabras de Animales, Comida, Lugares y Cosas (o todas mezcladas), sin repetir las últimas.
+- 2 jugadores: uno escribe la palabra a escondidas (con pista opcional) y el otro la adivina; los papeles se alternan.
+- Teclado con Ñ; las vocales con tilde o diéresis se descubren con la vocal normal. 6 fallos y estás ahorcado.
+
 Todos los juegos comparten una plantilla común (marcador, partida guardada, botón "‹ Menú" y estilos).
 Los que se juegan por partidas las guardan si se cierra la app, y el menú avisa con "partida a medias".
 
@@ -68,6 +78,8 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 | `app/src/main/assets/buscaminas.html`, `buscaminas-interfaz.js`, `buscaminas.js` | Buscaminas |
 | `app/src/main/assets/snake.html`, `snake-interfaz.js`, `snake.js` | Snake |
 | `app/src/main/assets/2048.html`, `2048-interfaz.js`, `2048.js` | 2048 |
+| `app/src/main/assets/memoria.html`, `memoria-interfaz.js`, `memoria.js` | Memoria: pantalla, interfaz y lógica de las parejas |
+| `app/src/main/assets/ahorcado.html`, `ahorcado-interfaz.js`, `ahorcado.js` | Ahorcado: pantalla, interfaz, lógica y lista de palabras |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
 | `herramientas/` | Pruebas (`todas.js` las lanza todas) y `plantilla/` para empezar un juego nuevo |
 
