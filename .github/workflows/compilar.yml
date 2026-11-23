@@ -29,8 +29,27 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Preparar clave de firma
+        env:
+          FIRMA_ALMACEN_BASE64: ${{ secrets.FIRMA_ALMACEN_BASE64 }}
+        run: |
+          if [ -z "$FIRMA_ALMACEN_BASE64" ]; then
+            echo "::error::Falta el secret FIRMA_ALMACEN_BASE64; no se publica un APK sin firmar"
+            exit 1
+          fi
+          echo "$FIRMA_ALMACEN_BASE64" | base64 -d > "$RUNNER_TEMP/firma.jks"
+          echo "FIRMA_ALMACEN=$RUNNER_TEMP/firma.jks" >> "$GITHUB_ENV"
+
       - name: Compilar APK
+        env:
+          FIRMA_CLAVE_ALMACEN: ${{ secrets.FIRMA_CLAVE_ALMACEN }}
+          FIRMA_ALIAS: ${{ secrets.FIRMA_ALIAS }}
+          FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
         run: gradle --no-daemon assembleRelease -PcodigoVersion=${{ github.run_number }}
+
+      - name: Borrar clave de firma
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firma.jks"
 
       - name: Renombrar APK
         run: cp app/build/outputs/apk/release/app-release.apk tres-en-raya.apk

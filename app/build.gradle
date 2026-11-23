@@ -17,23 +17,33 @@ android {
         versionName "1.0.${codigo}"
     }
 
-    // Misma firma siempre, para que cada APK nuevo se instale encima del anterior
+    // Misma firma siempre, para que cada APK nuevo se instale encima del anterior.
+    // La clave NO está en el repo: se lee de variables de entorno (GitHub Actions
+    // las rellena desde los secrets) o de ~/.gradle/gradle.properties en local.
+    def firma = { String nombre -> System.getenv(nombre) ?: project.findProperty(nombre) }
+    def almacen = firma('FIRMA_ALMACEN')
+    def hayFirma = almacen && file(almacen).exists()
+
     signingConfigs {
-        release {
-            storeFile file('tresenraya.jks')
-            storePassword 'tresenraya'
-            keyAlias 'tresenraya'
-            keyPassword 'tresenraya'
+        if (hayFirma) {
+            release {
+                storeFile file(almacen)
+                storePassword firma('FIRMA_CLAVE_ALMACEN')
+                keyAlias firma('FIRMA_ALIAS')
+                keyPassword firma('FIRMA_CLAVE')
+            }
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            // Sin clave (p. ej. en local) el APK de release sale sin firmar
+            if (hayFirma) signingConfig signingConfigs.release
         }
         debug {
-            signingConfig signingConfigs.release
+            // Sin clave se usa la firma de depuración por defecto de Android
+            if (hayFirma) signingConfig signingConfigs.release
         }
     }
 
