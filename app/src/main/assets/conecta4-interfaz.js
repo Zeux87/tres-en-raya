@@ -25,6 +25,8 @@
     { id: 'A', color: 'var(--amarillo)', colorTexto: 'var(--amarillo-texto)', punto: true }
   ]);
   var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    if (m === 'cerca') return entrarCerca();
+    salirCerca();
     datos.modo = m;
     cambiarAjustes();
   });
@@ -36,17 +38,23 @@
   // ---------- Persistencia ----------
   function guardar() { almacen.escribir('v1', datos); }
   function claveMarcador() { return datos.modo === 'dos' ? 'dos' : 'movil-' + datos.dificultad; }
-  function marcador() { return P.marcadorDe(datos.marcadores, claveMarcador(), ['R', 'A', 'E']); }
+  function marcador() {
+    if (red) return red.marcador; // con otro móvil: marcador solo de esta conexión
+    return P.marcadorDe(datos.marcadores, claveMarcador(), ['R', 'A', 'E']);
+  }
 
   // La partida a medias se guarda tras cada jugada y se borra al terminar
+  // (con otro móvil no se guarda: al volver ya no hay conexión)
   function guardarPartida() {
+    if (red) return;
     if (terminada) return partida.borrar();
     partida.guardar({ clave: claveMarcador(), tablero: tablero, turno: turno, empiezaR: empiezaR });
   }
 
   // ---------- Utilidades ----------
-  function contraMovil() { return datos.modo === 'movil'; }
+  function contraMovil() { return !red && datos.modo === 'movil'; }
   function nombre(f) {
+    if (red) return f === red.yo ? 'Tú' : red.rival;
     if (contraMovil()) return f === 'R' ? 'Tú' : 'El móvil';
     return f === 'R' ? 'Rojas' : 'Amarillas';
   }
@@ -69,10 +77,11 @@
   }
 
   function pintarAjustes() {
-    modos.poner(datos.modo);
+    modos.poner(sala ? 'cerca' : datos.modo);
     dificultades.poner(datos.dificultad);
     dificultades.ver(contraMovil());
-    mc.nombres(contraMovil() ? { R: 'Tú', A: 'Móvil' } : { R: 'Rojas', A: 'Amarillas' });
+    if (red) mc.nombres({ R: nombre('R'), A: nombre('A') });
+    else mc.nombres(contraMovil() ? { R: 'Tú', A: 'Móvil' } : { R: 'Rojas', A: 'Amarillas' });
   }
 
   function pintarMarcador() { mc.pintar(marcador()); }
@@ -81,7 +90,8 @@
     mc.turno(terminada ? null : turno);
     document.documentElement.style.setProperty('--color-turno', turno === 'R' ? 'var(--rojo)' : 'var(--amarillo)');
     var texto;
-    if (contraMovil()) texto = turno === 'R' ? 'Te toca: toca una columna' : 'El móvil está pensando…';
+    if (red) texto = turno === red.yo ? 'Te toca: toca una columna' : 'Turno de ' + red.rival + '…';
+    else if (contraMovil()) texto = turno === 'R' ? 'Te toca: toca una columna' : 'El móvil está pensando…';
     else texto = 'Turno de ' + (turno === 'R' ? 'rojas' : 'amarillas');
     ponerEstado(texto);
   }
@@ -97,14 +107,18 @@
   }
 
   // ---------- Juego ----------
-  function nuevaPartida() {
+  // "primero": quién empieza (solo con otro móvil, cuando lo decide el otro)
+  function nuevaPartida(primero) {
     ficha++; // invalida jugadas del móvil pendientes
     tablero = C.nuevo();
     terminada = false;
     ocupado = false;
-    turno = empiezaR ? 'R' : 'A';
-    empiezaR = !empiezaR; // la próxima empieza el otro color
-    partida.borrar();
+    colaRed = [];
+    turno = primero === 'R' || primero === 'A' ? primero : (empiezaR ? 'R' : 'A');
+    empiezaR = turno !== 'R'; // la próxima empieza el otro color
+    // Con otro móvil, si la empieza este, avisa al otro de quién sale
+    if (red && primero === undefined) sala.enviar({ t: 'nueva', turno: turno });
+    if (!red) partida.borrar();
     empezar();
   }
 
@@ -140,7 +154,7 @@
   }
 
   function puedeTocar() {
-    return !terminada && !ocupado && !(contraMovil() && turno === 'A');
+    return !terminada && !ocupado && !(contraMovil() && turno === 'A') && !(red && turno !== red.yo);
   }
 
   function columnaDe(evento) {
@@ -163,6 +177,7 @@
       vibrar(30);
       return;
     }
+    if (red) sala.enviar({ t: 'jugada', col: col });
     jugar(col, function () {
       if (!terminada && contraMovil()) turnoMovil();
     });
@@ -214,6 +229,7 @@
       marcarFlecha(-1);
       pintarTurno();
       if (despues) despues();
+      jugadaRed();
     }
     f.addEventListener('animationend', alCaer);
     setTimeout(alCaer, 700); // por si la animación no avisa
@@ -238,14 +254,16 @@
         if (fi) fi.classList.add('ganadora');
       });
       var texto;
-      if (contraMovil()) texto = r.ficha === 'R' ? '¡Has ganado! 🎉' : 'Gana el móvil';
+      if (red) texto = r.ficha === red.yo ? '¡Has ganado! 🎉' : 'Gana ' + red.rival;
+      else if (contraMovil()) texto = r.ficha === 'R' ? '¡Has ganado! 🎉' : 'Gana el móvil';
       else texto = '¡Ganan las ' + (r.ficha === 'R' ? 'rojas' : 'amarillas') + '! 🎉';
       ponerEstado(texto, 'gana-' + r.ficha);
       mc.saltar(r.ficha);
-      vibrar(r.ficha === 'R' || !contraMovil() ? 220 : 90);
+      var gano = red ? r.ficha === red.yo : (r.ficha === 'R' || !contraMovil());
+      vibrar(gano ? 220 : 90);
     }
     guardar();
-    partida.borrar();
+    if (!red) partida.borrar();
     pintarMarcador();
   }
 
@@ -256,9 +274,68 @@
     nuevaPartida();
   }
 
-  document.getElementById('nueva').addEventListener('click', nuevaPartida);
+  // ---------- Con otro móvil cercano (cerca.js) ----------
+  // El que crea la partida juega con rojas y el que se une con amarillas.
+  // Mensajes: { t: 'nueva', turno } y { t: 'jugada', col }
+  var sala = null, red = null, colaRed = [];
+
+  function entrarCerca() {
+    sala = Cerca.abrir({
+      juego: 'conecta4',
+      alConectar: function (info) {
+        red = { yo: info.anfitrion ? 'R' : 'A', rival: info.rival, marcador: { R: 0, A: 0, E: 0 } };
+        empiezaR = true;
+        if (info.anfitrion) nuevaPartida();
+        else {
+          // Espera a que el otro diga quién empieza
+          ficha++;
+          tablero = C.nuevo();
+          terminada = true;
+          empezar();
+          ponerEstado('Conectado con ' + red.rival + '…');
+        }
+      },
+      alMensaje: function (m) {
+        if (!red || !m) return;
+        if (m.t === 'nueva' && (m.turno === 'R' || m.turno === 'A')) nuevaPartida(m.turno);
+        else if (m.t === 'jugada' && m.col >= 0 && m.col < C.COLS) {
+          colaRed.push(m.col);
+          jugadaRed();
+        }
+      },
+      alCerrar: function () {
+        var habia = !!red;
+        sala = null;
+        red = null;
+        modos.poner(datos.modo);
+        if (!habia) return pintarAjustes();
+        // Vuelve al modo de antes, con su partida a medias si la había
+        empiezaR = true;
+        if (!recuperar()) nuevaPartida();
+      }
+    });
+  }
+
+  function salirCerca() {
+    if (sala) sala.cerrar();
+    sala = null;
+    red = null;
+  }
+
+  // Juega la ficha del otro móvil cuando acaba la animación de la anterior
+  function jugadaRed() {
+    if (!red || ocupado || terminada || turno === red.yo || !colaRed.length) return;
+    jugar(colaRed.shift());
+  }
+
+  document.getElementById('nueva').addEventListener('click', function () { nuevaPartida(); });
 
   document.getElementById('borrar').addEventListener('click', function () {
+    if (red) {
+      red.marcador = { R: 0, A: 0, E: 0 };
+      pintarMarcador();
+      return;
+    }
     datos.marcadores[claveMarcador()] = { R: 0, A: 0, E: 0 };
     guardar();
     pintarMarcador();
