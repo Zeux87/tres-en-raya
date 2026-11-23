@@ -3,6 +3,8 @@ name: Compilar y publicar APK
 on:
   push:
     branches: [main]
+  # En las propuestas de cambios (PR) solo se prueba y se compila; no se publica nada
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -36,9 +38,11 @@ jobs:
         run: gradle --no-daemon assembleRelease -PcodigoVersion=${{ github.run_number }}
 
       - name: Renombrar APK
+        if: github.event_name != 'pull_request'
         run: cp app/build/outputs/apk/release/app-release.apk tres-en-raya.apk
 
       - name: Publicar versión
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}

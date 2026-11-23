@@ -3,6 +3,7 @@ package es.pablo.tresenraya;
 import android.app.Activity;
 import android.content.pm.PackageInfo;
 import android.os.Build;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -19,12 +20,14 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private Actualizador actualizador;
+    private Cerca cerca;
 
     @Override
     protected void onCreate(Bundle estado) {
         super.onCreate(estado);
 
         actualizador = new Actualizador(this);
+        cerca = new Cerca(this, this::avisarCerca);
 
         web = new WebView(this);
         web.setBackgroundColor(0); // transparente: se ve el fondo del tema, sin destello blanco
@@ -38,6 +41,13 @@ public class MainActivity extends Activity {
                 // Solo se navega entre las pantallas del propio juego
                 String url = peticion.getUrl().toString();
                 return !url.startsWith(CARPETA_JUEGOS);
+            }
+
+            @Override
+            public void onPageStarted(WebView vista, String url, Bitmap icono) {
+                // Al cambiar de pantalla (p. ej. volver al menú) se corta la partida con el otro móvil
+                cerca.parar();
+                super.onPageStarted(vista, url, icono);
             }
         });
         web.addJavascriptInterface(new Puente(), "Android");
@@ -70,7 +80,23 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int peticion, String[] permisos, int[] resultados) {
+        super.onRequestPermissionsResult(peticion, permisos, resultados);
+        if (peticion == Cerca.PETICION_PERMISOS) cerca.permisosRespondidos();
+    }
+
+    /** Pasa un evento de Nearby al juego: window.__cercaEvento({ tipo: ... }) */
+    private void avisarCerca(org.json.JSONObject e) {
+        runOnUiThread(() -> {
+            if (web != null) {
+                web.evaluateJavascript("window.__cercaEvento && window.__cercaEvento(" + e.toString() + ")", null);
+            }
+        });
+    }
+
+    @Override
     protected void onDestroy() {
+        cerca.parar();
         if (web != null) {
             web.removeJavascriptInterface("Android");
             web.destroy();
@@ -125,6 +151,43 @@ public class MainActivity extends Activity {
                     actualizador.comprobar(true);
                 }
             });
+        }
+
+        // ---------- Partidas con otro móvil cercano (ver Cerca.java) ----------
+
+        @JavascriptInterface
+        public boolean cercaDisponible() {
+            return cerca.disponible();
+        }
+
+        @JavascriptInterface
+        public void cercaAnunciar(String servicio, String nombre) {
+            runOnUiThread(() -> cerca.anunciar(servicio, nombre));
+        }
+
+        @JavascriptInterface
+        public void cercaBuscar(String servicio, String nombre) {
+            runOnUiThread(() -> cerca.buscar(servicio, nombre));
+        }
+
+        @JavascriptInterface
+        public void cercaConectar(String id) {
+            runOnUiThread(() -> cerca.conectar(id));
+        }
+
+        @JavascriptInterface
+        public void cercaEnviar(String texto) {
+            runOnUiThread(() -> cerca.enviar(texto));
+        }
+
+        @JavascriptInterface
+        public void cercaParar() {
+            runOnUiThread(() -> cerca.parar());
+        }
+
+        @JavascriptInterface
+        public void cercaAjustes() {
+            runOnUiThread(() -> cerca.abrirAjustes());
         }
     }
 }
