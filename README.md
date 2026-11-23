@@ -31,8 +31,27 @@ Descarga `tres-en-raya.apk` de la [última versión](https://github.com/Zeux87/t
 Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), que:
 
 1. Pasa las pruebas de la lógica (`herramientas/pruebas.js`, `pruebas-conecta4.js` y `pruebas-flota.js`).
-2. Compila el APK firmado con `app/tresenraya.jks`, usando el número de compilación como `versionCode`.
+2. Compila el APK firmado con la clave guardada en los secrets del repositorio, usando el número de compilación como `versionCode`.
 3. Lo publica en Releases como `v<número>`; la app detecta esa versión y se actualiza.
+
+### Clave de firma
+
+La clave **no está en el repositorio**. GitHub Actions la lee de estos secrets
+(*Settings → Secrets and variables → Actions*):
+
+| Secret | Qué es |
+|---|---|
+| `FIRMA_ALMACEN_BASE64` | El archivo `.jks` en base64 (`base64 -w0 firma.jks`, o `base64 -i firma.jks` en macOS) |
+| `FIRMA_CLAVE_ALMACEN` | Contraseña del almacén |
+| `FIRMA_ALIAS` | Alias de la clave |
+| `FIRMA_CLAVE` | Contraseña de la clave |
+
+Si falta el almacén, la compilación falla en vez de publicar un APK sin firmar.
+Para firmar en local, pon `FIRMA_ALMACEN` (ruta al `.jks`), `FIRMA_CLAVE_ALMACEN`,
+`FIRMA_ALIAS` y `FIRMA_CLAVE` en `~/.gradle/gradle.properties` o como variables de entorno;
+sin ellas el APK de depuración usa la firma de depuración de Android.
+Guarda una copia del `.jks` fuera del repo: si se pierde, las nuevas versiones no se
+podrán instalar encima de las anteriores.
 
 ## Estructura
 
