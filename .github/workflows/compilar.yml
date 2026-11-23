@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: 20
       - run: node herramientas/pruebas.js && node herramientas/pruebas-flota.js && node herramientas/pruebas-conecta4.js
+      - run: node herramientas/pruebas-ppt.js && node herramientas/pruebas-buscaminas.js && node herramientas/pruebas-snake.js && node herramientas/pruebas-2048.js
 
       - uses: actions/setup-java@v4
         with:
