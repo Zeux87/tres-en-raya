@@ -24,6 +24,8 @@
     { id: 'O', color: 'var(--o)' }
   ]);
   var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    if (m === 'cerca') return entrarCerca();
+    salirCerca();
     datos.modo = m;
     cambiarAjustes();
   });
@@ -37,16 +39,21 @@
   function claveMarcador() {
     return datos.modo === 'dos' ? 'dos' : 'movil-' + datos.dificultad;
   }
-  function marcador() { return P.marcadorDe(datos.marcadores, claveMarcador(), ['X', 'O', 'E']); }
+  function marcador() {
+    if (red) return red.marcador; // con otro móvil: marcador solo de esta conexión
+    return P.marcadorDe(datos.marcadores, claveMarcador(), ['X', 'O', 'E']);
+  }
 
   // La partida a medias se guarda tras cada jugada y se borra al terminar
+  // (con otro móvil no se guarda: al volver ya no hay conexión)
   function guardarPartida() {
+    if (red) return;
     if (terminada || tablero.every(function (c) { return !c; })) return partida.borrar();
     partida.guardar({ clave: claveMarcador(), tablero: tablero, turno: turno, empiezaX: empiezaX });
   }
 
   // ---------- Utilidades ----------
-  function contraMovil() { return datos.modo === 'movil'; }
+  function contraMovil() { return !red && datos.modo === 'movil'; }
   var vibrar = P.vibrar;
 
   function dibujoFicha(f) {
@@ -74,10 +81,17 @@
 
   // ---------- Pintado ----------
   function pintarAjustes() {
-    modos.poner(datos.modo);
+    modos.poner(sala ? 'cerca' : datos.modo);
     dificultades.poner(datos.dificultad);
     dificultades.ver(contraMovil());
-    mc.nombres(contraMovil() ? { X: 'Tú (X)', O: 'Móvil (O)' } : { X: 'Jugador X', O: 'Jugador O' });
+    if (red) {
+      var n = {};
+      n[red.yo] = 'Tú (' + red.yo + ')';
+      n[T.rival(red.yo)] = red.rival + ' (' + T.rival(red.yo) + ')';
+      mc.nombres(n);
+    } else {
+      mc.nombres(contraMovil() ? { X: 'Tú (X)', O: 'Móvil (O)' } : { X: 'Jugador X', O: 'Jugador O' });
+    }
   }
 
   function pintarMarcador() { mc.pintar(marcador()); }
@@ -90,6 +104,7 @@
   }
 
   function textoTurno() {
+    if (red) return turno === red.yo ? 'Te toca' : 'Turno de ' + red.rival + '…';
     if (contraMovil()) return turno === 'X' ? 'Te toca' : 'El móvil está pensando…';
     return 'Turno de ' + turno;
   }
@@ -122,13 +137,16 @@
   }
 
   // ---------- Juego ----------
-  function nuevaPartida() {
+  // "primero": quién empieza (solo con otro móvil, cuando lo decide el otro)
+  function nuevaPartida(primero) {
     ficha++; // invalida jugadas del móvil pendientes
     tablero = [null, null, null, null, null, null, null, null, null];
     terminada = false;
-    turno = empiezaX ? 'X' : 'O';
-    empiezaX = !empiezaX; // la siguiente partida empieza el otro
-    partida.borrar();
+    turno = primero === 'X' || primero === 'O' ? primero : (empiezaX ? 'X' : 'O');
+    empiezaX = turno !== 'X'; // la siguiente partida empieza el otro
+    // Con otro móvil, si la empieza este, avisa al otro de quién sale
+    if (red && primero === undefined) sala.enviar({ t: 'nueva', turno: turno });
+    if (!red) partida.borrar();
     empezar();
   }
 
@@ -165,6 +183,8 @@
   function pulsar(i) {
     if (terminada || tablero[i]) return;
     if (contraMovil() && turno !== 'X') return;
+    if (red && turno !== red.yo) return;
+    if (red) sala.enviar({ t: 'jugada', i: i });
     jugar(i);
     if (!terminada && contraMovil()) turnoMovil();
   }
@@ -215,14 +235,16 @@
       }
       dibujarLinea(r.linea, r.ficha);
       var texto;
-      if (contraMovil()) texto = r.ficha === 'X' ? '¡Has ganado! 🎉' : 'Gana el móvil';
+      if (red) texto = r.ficha === red.yo ? '¡Has ganado! 🎉' : 'Gana ' + red.rival;
+      else if (contraMovil()) texto = r.ficha === 'X' ? '¡Has ganado! 🎉' : 'Gana el móvil';
       else texto = '¡Gana ' + r.ficha + '! 🎉';
       ponerEstado(texto, r.ficha === 'X' ? 'gana-x' : 'gana-o');
       mc.saltar(r.ficha);
-      vibrar(r.ficha === 'X' || !contraMovil() ? 180 : 90);
+      var gano = red ? r.ficha === red.yo : (r.ficha === 'X' || !contraMovil());
+      vibrar(gano ? 180 : 90);
     }
     guardar();
-    partida.borrar();
+    if (!red) partida.borrar();
     pintarMarcador();
   }
 
@@ -233,9 +255,59 @@
     nuevaPartida();
   }
 
-  document.getElementById('nueva').addEventListener('click', nuevaPartida);
+  // ---------- Con otro móvil cercano (cerca.js) ----------
+  // El que crea la partida juega con X y el que se une con O.
+  // Mensajes: { t: 'nueva', turno } y { t: 'jugada', i }
+  var sala = null, red = null;
+
+  function entrarCerca() {
+    sala = Cerca.abrir({
+      juego: 'tresenraya',
+      alConectar: function (info) {
+        red = { yo: info.anfitrion ? 'X' : 'O', rival: info.rival, marcador: { X: 0, O: 0, E: 0 } };
+        empiezaX = true;
+        if (info.anfitrion) nuevaPartida();
+        else {
+          // Espera a que el otro diga quién empieza
+          ficha++;
+          tablero = [null, null, null, null, null, null, null, null, null];
+          terminada = true;
+          empezar();
+          ponerEstado('Conectado con ' + red.rival + '…');
+        }
+      },
+      alMensaje: function (m) {
+        if (!red || !m) return;
+        if (m.t === 'nueva' && (m.turno === 'X' || m.turno === 'O')) nuevaPartida(m.turno);
+        else if (m.t === 'jugada' && !terminada && turno !== red.yo && m.i >= 0 && m.i < 9 && !tablero[m.i]) jugar(m.i);
+      },
+      alCerrar: function (motivo) {
+        var habia = !!red;
+        sala = null;
+        red = null;
+        modos.poner(datos.modo);
+        if (!habia) return pintarAjustes();
+        // Vuelve al modo de antes, con su partida a medias si la había
+        empiezaX = true;
+        if (!recuperar()) nuevaPartida();
+      }
+    });
+  }
+
+  function salirCerca() {
+    if (sala) sala.cerrar();
+    sala = null;
+    red = null;
+  }
+
+  document.getElementById('nueva').addEventListener('click', function () { nuevaPartida(); });
 
   document.getElementById('borrar').addEventListener('click', function () {
+    if (red) {
+      red.marcador = { X: 0, O: 0, E: 0 };
+      pintarMarcador();
+      return;
+    }
     datos.marcadores[claveMarcador()] = { X: 0, O: 0, E: 0 };
     guardar();
     pintarMarcador();

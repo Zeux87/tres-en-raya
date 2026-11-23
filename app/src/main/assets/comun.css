@@ -180,3 +180,60 @@ footer button {
   100% { transform: scale(1); }
 }
 .salto { animation: salto .45s ease; }
+
+/* Ventana para jugar con otro móvil cercano (cerca.js) */
+.cerca-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(10, 8, 20, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.cerca-caja {
+  background: var(--tarjeta);
+  color: var(--texto);
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 100%;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cerca-caja h2 { margin: 0; font-size: 19px; }
+.cerca-caja p { margin: 0; color: var(--suave); font-size: 14px; line-height: 1.45; }
+.cerca-caja p b { color: var(--texto); }
+.cerca-caja .cerca-error { color: var(--x); font-weight: 700; font-size: 15px; }
+.cerca-campo { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--suave); }
+.cerca-campo input {
+  font: inherit;
+  font-size: 17px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 2px solid var(--rejilla);
+  background: var(--fondo);
+  color: var(--texto);
+  user-select: text;
+  -webkit-user-select: text;
+}
+.cerca-campo input:focus { outline: none; border-color: var(--acento); }
+.cerca-botones, .cerca-lista { display: flex; flex-direction: column; gap: 8px; }
+.cerca-botones .boton, .cerca-lista .boton { width: 100%; flex: none; }
+.cerca-espera { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.cerca-giro {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid var(--rejilla);
+  border-top-color: var(--acento);
+  animation: cerca-giro .8s linear infinite;
+  flex: none;
+}
+@keyframes cerca-giro { to { transform: rotate(360deg); } }
+.cerca-caja .boton.secundario { background: var(--fondo); box-shadow: none; }

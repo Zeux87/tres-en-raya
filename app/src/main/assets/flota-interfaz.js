@@ -60,6 +60,8 @@
 
   function jugador(i) { return estado.jugadores[i]; }
   function actual() { return jugador(estado.actual); }
+  // Quién coloca su flota: en un móvil, el jugador del turno; con otro móvil, yo
+  function colocando() { return red ? red.yo : actual(); }
   function rival() { return jugador(1 - estado.actual); }
 
   function cuadros(n) {
@@ -114,6 +116,11 @@
   // ---------- Render ----------
   function pintar() {
     raiz.innerHTML = '';
+    if (red) {
+      pintarRed();
+      window.scrollTo(0, 0);
+      return;
+    }
     var fases = { inicio: pInicio, reanudar: pInicio, pase: pPase, colocar: pColocar, disparar: pDisparar, fin: pFin };
     (fases[estado.fase] || pInicio)();
     window.scrollTo(0, 0);
@@ -175,6 +182,9 @@
       nuevaPartida(leerNombres());
     } }));
     raiz.appendChild(h('div', { clase: 'acciones' }, botones));
+    raiz.appendChild(h('div', { clase: 'acciones' }, [
+      h('button', { clase: 'boton secundario', texto: '📶 Jugar con otro móvil', alClick: entrarCerca })
+    ]));
   }
 
   function nuevaPartida(n) {
@@ -231,7 +241,7 @@
     return null;
   }
   function primerSinColocar() {
-    var j = actual();
+    var j = colocando();
     for (var i = 0; i < F.FLOTA.length; i++) if (!barcoPorId(j, F.FLOTA[i].id)) return F.FLOTA[i].id;
     return null;
   }
@@ -253,7 +263,7 @@
   }
 
   function girar(b) {
-    var j = actual();
+    var j = colocando();
     var h2 = !b.horizontal;
     var celdas = celdasAjustadas(b.celdas[0], b.largo, h2);
     if (F.sePuedeColocar(j.barcos, celdas, b.id)) {
@@ -268,7 +278,7 @@
   }
 
   function pulsarColocar(c) {
-    var j = actual();
+    var j = colocando();
     var b = F.barcoEn(j, c);
     if (b) {
       if (b.id === ui.sel) girar(b);
@@ -303,7 +313,7 @@
   }
 
   function pColocar() {
-    var j = actual();
+    var j = colocando();
     raiz.appendChild(barra('Tu flota'));
     raiz.appendChild(h('div', { clase: 'cabecera' }, [
       h('span', { clase: 'quien', texto: j.nombre }),
@@ -374,14 +384,15 @@
 
   function orientar(horizontal) {
     ui.horizontal = horizontal;
-    var b = ui.sel && barcoPorId(actual(), ui.sel);
+    var b = ui.sel && barcoPorId(colocando(), ui.sel);
     if (b && b.horizontal !== horizontal) girar(b);
     guardar();
     pintar();
   }
 
   function flotaLista() {
-    if (!F.flotaCompleta(actual())) return;
+    if (!F.flotaCompleta(colocando())) return;
+    if (red) return redFlotaLista();
     if (estado.actual === 0) {
       estado.actual = 1;
       estado.siguiente = 'colocar';
@@ -568,6 +579,336 @@
     estado.fase = 'pase';
     guardar();
     pintar();
+  }
+
+  // ---------- Con otro móvil cercano (cerca.js) ----------
+  // Cada uno coloca su flota en su móvil y solo sabe de la del otro lo que
+  // le contestan sus disparos. Mensajes:
+  //   { t: 'lista' }                     mi flota está colocada
+  //   { t: 'empieza', anfitrion }        (lo manda quien creó la partida) quién dispara primero
+  //   { t: 'disparo', c }                disparo a la casilla c
+  //   { t: 'resultado', c, tipo, barco, aguaAuto, fin, flota }  respuesta al disparo
+  //   { t: 'flota', barcos }             al acabar, el ganador enseña su flota
+  //   { t: 'revancha' }                  quiere jugar otra
+  // No se guarda: si se corta la conexión, la partida se pierde.
+  var red = null;
+
+  function entrarCerca() {
+    var sala = Cerca.abrir({
+      juego: 'flota',
+      alConectar: function (info) {
+        red = {
+          sala: sala,
+          anfitrion: info.anfitrion,
+          rival: info.rival,
+          nombre: sala.nombre,
+          marcador: { yo: 0, el: 0 },
+          empiezaAnfitrion: true
+        };
+        redRonda();
+      },
+      alMensaje: redMensaje,
+      alCerrar: function () {
+        red = null;
+        ui.confirmarAbandono = false;
+        pintar();
+      }
+    });
+  }
+
+  // Prepara una partida nueva con el mismo rival
+  function redRonda() {
+    red.yo = F.nuevoJugador(red.nombre);
+    red.el = F.nuevoJugador(red.rival); // lo que sé de su flota: mis disparos y sus barcos hundidos
+    red.fase = 'colocar';
+    red.listoYo = red.listoEl = false;
+    red.miTurno = false;
+    red.esperando = false; // he disparado y espero la respuesta
+    red.mensaje = null;
+    red.ultimo = -1;       // mi último disparo
+    red.ultimoSuyo = -1;   // su último disparo
+    red.stats = { disparos: 0, aciertos: 0 };
+    red.statsEl = { disparos: 0, aciertos: 0 };
+    red.ganador = null;    // 'yo' o 'el'
+    red.revanchaYo = red.revanchaEl = false;
+    ui.sel = F.FLOTA[0].id;
+    ui.horizontal = true;
+    ui.ayuda = '';
+    ui.ayudaError = false;
+    ui.confirmarAbandono = false;
+    pintar();
+  }
+
+  function redEnviar(m) { if (red) red.sala.enviar(m); }
+
+  function redFlotaLista() {
+    red.listoYo = true;
+    red.fase = 'esperaFlota';
+    redEnviar({ t: 'lista' });
+    redQuizaEmpezar();
+    pintar();
+  }
+
+  // Quien creó la partida decide quién empieza, alternando en cada revancha
+  function redQuizaEmpezar() {
+    if (!red.anfitrion || !red.listoYo || !red.listoEl || red.fase !== 'esperaFlota') return;
+    var empiezo = red.empiezaAnfitrion;
+    red.empiezaAnfitrion = !red.empiezaAnfitrion;
+    redEnviar({ t: 'empieza', anfitrion: empiezo });
+    redBatalla(empiezo);
+  }
+
+  function redBatalla(miTurno) {
+    red.fase = 'disparar';
+    red.miTurno = miTurno;
+    red.mensaje = { tipo: 'info', texto: miTurno ? 'Empiezas tú: toca una casilla para disparar' : 'Empieza ' + red.rival };
+    vibrar(30);
+    pintar();
+  }
+
+  function redMensaje(m) {
+    if (!red || !m) return;
+    if (m.t === 'lista') {
+      red.listoEl = true;
+      redQuizaEmpezar();
+      if (red.fase !== 'disparar') pintar();
+    } else if (m.t === 'noLista') {
+      red.listoEl = false;
+      if (red.fase === 'esperaFlota') pintar();
+    } else if (m.t === 'empieza' && !red.anfitrion && red.fase === 'esperaFlota') {
+      redBatalla(!m.anfitrion);
+    } else if (m.t === 'disparo') {
+      redRecibirDisparo(m.c);
+    } else if (m.t === 'resultado') {
+      redResultado(m);
+    } else if (m.t === 'flota' && Array.isArray(m.barcos)) {
+      red.el.barcos = m.barcos;
+      pintar();
+    } else if (m.t === 'revancha') {
+      red.revanchaEl = true;
+      if (red.revanchaYo) redRonda();
+      else pintar();
+    }
+  }
+
+  function redDisparar(c) {
+    if (!red || red.fase !== 'disparar' || !red.miTurno || red.esperando || red.el.disparos[c]) return;
+    red.esperando = true;
+    red.ultimo = c;
+    redEnviar({ t: 'disparo', c: c });
+    red.mensaje = { tipo: 'info', texto: 'Disparo a ' + F.nombreCasilla(c) + '…' };
+    pintar();
+  }
+
+  // El otro me dispara: lo compruebo en mi flota y le contesto
+  function redRecibirDisparo(c) {
+    if (red.fase !== 'disparar' || red.miTurno || !(c >= 0 && c < F.TOTAL)) return;
+    var r = F.disparar(red.yo, c);
+    if (r.tipo === 'repetido') return redEnviar({ t: 'resultado', c: c, tipo: 'repetido', aguaAuto: [] });
+    red.statsEl.disparos++;
+    if (r.tipo !== 'agua') red.statsEl.aciertos++;
+    red.ultimoSuyo = c;
+    var resp = { t: 'resultado', c: c, tipo: r.tipo, aguaAuto: r.aguaAuto, fin: r.fin };
+    if (r.barco && r.tipo === 'hundido') resp.barco = r.barco;
+    if (r.fin) resp.flota = red.yo.barcos; // ha ganado: que vea toda mi flota
+    redEnviar(resp);
+
+    var casilla = F.nombreCasilla(c);
+    if (r.tipo === 'agua') {
+      red.miTurno = true;
+      red.mensaje = { tipo: 'agua', texto: red.rival + ' dispara a ' + casilla + ': agua. ¡Te toca!' };
+      vibrar(15);
+    } else if (r.tipo === 'tocado') {
+      red.mensaje = { tipo: 'tocado', texto: red.rival + ' te da en ' + casilla + ': ¡tocado!' };
+      vibrar(60);
+    } else {
+      red.mensaje = { tipo: 'hundido', texto: red.rival + ' te ha hundido el ' + r.barco.nombre.toLowerCase() };
+      vibrar(r.fin ? 400 : 220);
+    }
+    if (r.fin) return redFin('el');
+    pintar();
+  }
+
+  // Me contestan a mi disparo
+  function redResultado(m) {
+    if (red.fase !== 'disparar' || !red.esperando || m.c !== red.ultimo) return;
+    red.esperando = false;
+    if (m.tipo === 'repetido') return pintar();
+    var c = m.c;
+    red.stats.disparos++;
+    red.el.disparos[c] = m.tipo === 'agua' ? 'agua' : 'tocado';
+    (m.aguaAuto || []).forEach(function (a) { if (!red.el.disparos[a]) red.el.disparos[a] = 'agua'; });
+    var casilla = F.nombreCasilla(c);
+    if (m.tipo === 'agua') {
+      red.miTurno = false;
+      red.mensaje = { tipo: 'agua', texto: casilla + ': ¡Agua! Le toca a ' + red.rival };
+      vibrar(15);
+    } else if (m.tipo === 'tocado') {
+      red.stats.aciertos++;
+      red.mensaje = { tipo: 'tocado', texto: casilla + ': ¡Tocado! Vuelve a disparar' };
+      vibrar(60);
+    } else {
+      red.stats.aciertos++;
+      if (m.barco) {
+        var b = m.barco;
+        b.tocados = b.largo;
+        red.el.barcos.push(b);
+      }
+      red.mensaje = { tipo: 'hundido', texto: '¡' + (m.barco ? m.barco.nombre : 'Barco') + ' hundido!' };
+      vibrar(m.fin ? 400 : 220);
+    }
+    if (m.fin) {
+      if (Array.isArray(m.flota)) red.el.barcos = m.flota;
+      redEnviar({ t: 'flota', barcos: red.yo.barcos });
+      return redFin('yo');
+    }
+    pintar();
+  }
+
+  function redFin(ganador) {
+    red.ganador = ganador;
+    red.marcador[ganador]++;
+    red.miTurno = false;
+    // Un momento para ver el último disparo antes de la pantalla final
+    pintar();
+    var esta = red;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(function () {
+      if (red !== esta || red.ganador !== ganador) return;
+      red.fase = 'fin';
+      pintar();
+    }, 1300);
+  }
+
+  function redSalir() {
+    if (!red) return;
+    var s = red.sala;
+    red = null;
+    s.cerrar();
+    pintar();
+  }
+
+  // ---------- Pantallas con otro móvil ----------
+  function pintarRed() {
+    if (red.fase === 'colocar') return pColocar();
+    if (red.fase === 'esperaFlota') return pRedEspera();
+    if (red.fase === 'fin') return pRedFin();
+    pRedDisparar();
+  }
+
+  function pRedEspera() {
+    raiz.appendChild(barra('Hundir la flota'));
+    raiz.appendChild(h('div', { clase: 'pase' }, [
+      h('div', { clase: 'icono', texto: '⚓' }),
+      h('div', { clase: 'quien', texto: '¡Flota lista!' }),
+      h('div', { clase: 'suave', texto: red.listoEl
+        ? 'Empezando…'
+        : 'Esperando a que ' + red.rival + ' coloque su flota…' }),
+      h('div', { style: 'width:60%;max-width:220px' }, [tablero({ jugador: red.yo, verBarcos: true, tam: 'pequeno' })]),
+      h('button', { clase: 'boton secundario', texto: 'Cambiar mi flota', alClick: function () {
+        red.listoYo = false;
+        red.fase = 'colocar';
+        redEnviar({ t: 'noLista' });
+        pintar();
+      } })
+    ]));
+  }
+
+  function pRedDisparar() {
+    var yo = red.yo;
+    var el = red.el;
+    var terminado = !!red.ganador;
+    raiz.appendChild(barra('Hundir la flota'));
+    raiz.appendChild(h('div', { clase: 'cabecera' }, [
+      h('span', { clase: 'quien', texto: terminado ? (red.ganador === 'yo' ? '¡Has ganado!' : 'Gana ' + red.rival)
+        : red.miTurno ? 'Te toca disparar' : 'Dispara ' + red.rival + '…' }),
+      h('span', { clase: 'suave', texto: 'Flota de ' + red.rival })
+    ]));
+
+    raiz.appendChild(tablero({
+      jugador: el,
+      verBarcos: false,
+      tam: 'grande',
+      alPulsar: red.miTurno && !red.esperando && !terminado ? redDisparar : null,
+      ultimo: red.ultimo
+    }));
+
+    var msj = red.mensaje || { tipo: 'info', texto: red.miTurno ? 'Toca una casilla para disparar' : 'Espera tu turno' };
+    raiz.appendChild(h('div', { clase: 'mensaje ' + msj.tipo, texto: msj.texto }));
+
+    var hundidos = {};
+    el.barcos.forEach(function (b) { if (F.hundido(b)) hundidos[b.id] = true; });
+    raiz.appendChild(h('div', { clase: 'abajo' }, [
+      h('div', null, [
+        h('h2', { texto: 'Tu flota' }),
+        tablero({ jugador: yo, verBarcos: true, tam: 'pequeno', ultimo: red.ultimoSuyo })
+      ]),
+      h('div', null, [
+        h('h2', { texto: 'Barcos de ' + red.rival }),
+        h('ul', { clase: 'lista-enemiga' }, F.FLOTA.slice().sort(function (a, b) { return b.largo - a.largo; }).map(function (b) {
+          return h('li', { clase: hundidos[b.id] ? 'hundido' : '' }, [h('span', { texto: b.nombre }), cuadros(b.largo)]);
+        }))
+      ])
+    ]));
+
+    if (!terminado) {
+      raiz.appendChild(h('button', {
+        clase: 'boton peligro' + (ui.confirmarAbandono ? ' confirmar' : ''),
+        texto: ui.confirmarAbandono ? '¿Seguro? Toca otra vez para salir' : 'Salir de la partida',
+        alClick: function () {
+          if (!ui.confirmarAbandono) {
+            ui.confirmarAbandono = true;
+            pintar();
+            clearTimeout(temporizador);
+            temporizador = setTimeout(function () { ui.confirmarAbandono = false; if (red && red.fase === 'disparar') pintar(); }, 3000);
+            return;
+          }
+          ui.confirmarAbandono = false;
+          redSalir();
+        }
+      }));
+    }
+  }
+
+  function pRedFin() {
+    var gano = red.ganador === 'yo';
+    raiz.appendChild(barra('Hundir la flota'));
+    raiz.appendChild(h('div', { clase: 'trofeo', texto: gano ? '🏆' : '⚓' }));
+    raiz.appendChild(h('div', { clase: 'ganador', texto: gano ? '¡Has ganado!' : '¡Gana ' + red.rival + '!' }));
+    raiz.appendChild(h('div', { clase: 'centro suave', texto: 'Marcador: tú ' + red.marcador.yo + ' – ' + red.marcador.el + ' ' + red.rival }));
+
+    raiz.appendChild(h('div', { clase: 'dos' }, [
+      { titulo: 'Tú', j: red.yo, st: red.stats, gana: gano },
+      { titulo: red.rival, j: red.el, st: red.statsEl, gana: !gano }
+    ].map(function (x) {
+      var prec = x.st.disparos ? Math.round(x.st.aciertos * 100 / x.st.disparos) : 0;
+      return h('div', { clase: 'tarjeta' }, [
+        h('h2', { texto: (x.gana ? '🏆 ' : '') + x.titulo }),
+        h('div', { clase: 'stat', texto: x.j === red.yo ? 'Tu flota:' : 'Su flota:' }),
+        tablero({ jugador: x.j, verBarcos: true, tam: 'pequeno' }),
+        h('div', { clase: 'stat' }, [
+          x.j === red.yo ? 'Tus disparos: ' : 'Sus disparos: ', h('b', { texto: String(x.st.disparos) }), h('br'),
+          'Aciertos: ', h('b', { texto: x.st.aciertos + ' (' + prec + '%)' })
+        ])
+      ]);
+    })));
+
+    var revancha = h('button', {
+      clase: 'boton',
+      texto: red.revanchaYo ? 'Esperando a ' + red.rival + '…' : red.revanchaEl ? red.rival + ' quiere la revancha: ¡vamos!' : 'Revancha',
+      alClick: function () {
+        if (red.revanchaYo) return;
+        red.revanchaYo = true;
+        redEnviar({ t: 'revancha' });
+        if (red.revanchaEl) redRonda();
+        else pintar();
+      }
+    });
+    revancha.disabled = red.revanchaYo;
+    raiz.appendChild(h('div', { clase: 'acciones' }, [
+      revancha,
+      h('button', { clase: 'boton secundario', texto: 'Salir', alClick: redSalir })
+    ]));
   }
 
   // ---------- Arranque ----------

@@ -56,6 +56,7 @@
   .opciones button span { font-size: 40px; line-height: 1.1; }
   .opciones button:active { transform: scale(.95); }
   .opciones button:disabled { opacity: .5; }
+  .opciones button.elegida { opacity: 1; box-shadow: 0 0 0 3px var(--acento); }
   #ayuda { text-align: center; font-size: 13px; color: var(--suave); }
 </style>
 </head>
@@ -70,6 +71,7 @@
   <div class="segmentos" id="niveles">
     <button data-nivel="facil">Al azar</button>
     <button data-nivel="listo">Listo</button>
+    <button data-nivel="cerca">Otro móvil</button>
   </div>
   <div id="ayuda"></div>
 
@@ -78,7 +80,7 @@
   <div class="arena" id="arena">
     <div class="lado"><div class="quien">Tú</div><div class="mano" id="manoT">✊</div></div>
     <div class="vs">VS</div>
-    <div class="lado"><div class="quien">Móvil</div><div class="mano" id="manoM">✊</div></div>
+    <div class="lado"><div class="quien" id="quienM">Móvil</div><div class="mano" id="manoM">✊</div></div>
   </div>
 
   <div id="estado">Elige tu jugada</div>
@@ -96,6 +98,7 @@
 </main>
 
 <script src="plataforma.js"></script>
+<script src="cerca.js"></script>
 <script src="ppt.js"></script>
 <script src="ppt-interfaz.js"></script>
 </body>

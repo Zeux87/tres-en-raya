@@ -45,6 +45,14 @@ App Android con nueve juegos:
 - 2 jugadores: uno escribe la palabra a escondidas (con pista opcional) y el otro la adivina; los papeles se alternan.
 - Teclado con Ñ; las vocales con tilde o diéresis se descubren con la vocal normal. 6 fallos y estás ahorcado.
 
+**Jugar con dos móviles** (3 en raya, Conecta 4, Hundir la flota, Piedra, papel o tijera, Memoria y Ahorcado)
+- Con dos móviles cerca, sin internet: se conectan por Bluetooth y wifi con Google Nearby Connections.
+- Uno toca «Crear partida» y el otro «Unirme a una partida»; cada uno juega en su pantalla
+  (en Hundir la flota cada uno coloca su flota en su móvil, sin pasarse el móvil).
+- La primera vez Android pide el permiso de «Dispositivos cercanos» (o ubicación en Android 11 y anteriores).
+- Si se corta la conexión, se avisa y se vuelve al modo de un móvil. El marcador de estas partidas no se guarda.
+- Código: `Cerca.java` (Nearby, permisos) y `assets/cerca.js` (ventana para conectar y mensajes entre los juegos).
+
 Todos los juegos comparten una plantilla común (marcador, partida guardada, botón "‹ Menú" y estilos).
 Los que se juegan por partidas las guardan si se cierra la app, y el menú avisa con "partida a medias".
 

@@ -15,7 +15,7 @@
     id: 'tresenraya',
     pagina: 'tresenraya.html',
     titulo: '3 en raya',
-    texto: 'Contra el móvil (3 niveles) o a dos jugadores',
+    texto: 'Contra el móvil (3 niveles) o a dos, en uno o dos móviles',
     icono:
       '<rect width="76" height="76" fill="#4b3fd6"/>' +
       '<path d="M31 16v44M45 16v44M16 31h44M16 45h44" stroke="#fff" stroke-opacity=".55" stroke-width="2.5" stroke-linecap="round"/>' +
@@ -27,7 +27,7 @@
     id: 'conecta4',
     pagina: 'conecta4.html',
     titulo: 'Conecta 4',
-    texto: 'Contra el móvil (3 niveles) o a dos jugadores',
+    texto: 'Contra el móvil (3 niveles) o a dos, en uno o dos móviles',
     icono:
       '<rect width="76" height="76" fill="#2f5fd0"/>' +
       '<g fill="#1d3f99"><circle cx="16" cy="16" r="7"/><circle cx="31" cy="16" r="7"/><circle cx="46" cy="16" r="7"/><circle cx="16" cy="31" r="7"/><circle cx="31" cy="31" r="7"/><circle cx="16" cy="46" r="7"/></g>' +
@@ -39,7 +39,7 @@
     id: 'flota',
     pagina: 'flota.html',
     titulo: 'Hundir la flota',
-    texto: '2 jugadores en el mismo móvil',
+    texto: '2 jugadores, en un móvil o en dos',
     icono:
       '<rect width="76" height="76" fill="#1d5f9e"/>' +
       '<path d="M8 52c6 0 6-4 12-4s6 4 12 4 6-4 12-4 6 4 12 4 6-4 12-4" fill="none" stroke="#9fd3ff" stroke-width="3" stroke-linecap="round"/>' +
@@ -53,7 +53,7 @@
     id: 'ppt',
     pagina: 'ppt.html',
     titulo: 'Piedra, papel o tijera',
-    texto: 'Contra el móvil, que aprende tus manías',
+    texto: 'Contra el móvil, que aprende tus manías, o contra otro móvil',
     icono:
       '<rect width="76" height="76" fill="#e0703a"/>' +
       '<text x="22" y="34" font-size="24" text-anchor="middle">✊</text>' +
@@ -102,7 +102,7 @@
     id: 'memoria',
     pagina: 'memoria.html',
     titulo: 'Memoria',
-    texto: 'Encuentra las parejas, solo (3 niveles) o a dos jugadores',
+    texto: 'Encuentra las parejas, solo (3 niveles) o a dos, en uno o dos móviles',
     icono:
       '<rect width="76" height="76" fill="#6a45c9"/>' +
       '<rect x="10" y="12" width="24" height="30" rx="5" fill="#9a73ee"/>' +
@@ -118,7 +118,7 @@
     id: 'ahorcado',
     pagina: 'ahorcado.html',
     titulo: 'Ahorcado',
-    texto: 'Adivina palabras en español, solo o a dos jugadores',
+    texto: 'Adivina palabras en español, solo o a dos, en uno o dos móviles',
     icono:
       '<rect width="76" height="76" fill="#2f8a6e"/>' +
       '<path d="M14 64h30M24 64V12h28M24 22l10-10" stroke="#e9d8c4" stroke-width="4" stroke-linecap="round" fill="none"/>' +

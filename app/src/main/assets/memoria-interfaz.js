@@ -22,6 +22,8 @@
   };
 
   var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    if (m === 'cerca') return entrarCerca();
+    salirCerca();
     datos.modo = m;
     cambiarAjustes();
   });
@@ -45,13 +47,14 @@
 
   // La partida a medias se guarda tras cada jugada y se borra al terminar
   function guardarPartida() {
+    if (red) return; // con otro móvil no se guarda: al volver ya no hay conexión
     if (!partida || M.terminada(partida)) return guardada.borrar();
     if (!partida.intentos && !partida.arriba.length) return guardada.borrar(); // sin empezar
     guardada.guardar({ modo: datos.modo, nivel: datos.nivel, estado: partida, segundos: segundos(), empieza: empieza });
   }
 
   // ---------- Utilidades ----------
-  function solo() { return datos.modo === 'solo'; }
+  function solo() { return !red && datos.modo === 'solo'; }
   var vibrar = P.vibrar;
   function segundos() { return inicio ? Math.floor((Date.now() - inicio) / 1000) : 0; }
   function mmss(s) {
@@ -79,7 +82,7 @@
   }
 
   function pintarAjustes() {
-    modos.poner(datos.modo);
+    modos.poner(sala ? 'cerca' : datos.modo);
     niveles.poner(datos.nivel);
     el.pantalla.classList.toggle('dos', !solo());
     crearMarcador();
@@ -89,6 +92,13 @@
     if (solo()) {
       var r = datos.records[datos.nivel];
       mc.pintar({ intentos: partida.intentos, tiempo: mmss(segundos()), record: r ? r.intentos : '–' });
+    } else if (red) {
+      var n = {};
+      n[red.yo] = 'Tú 🏆' + red.victorias[red.yo];
+      n[3 - red.yo] = red.rival + ' 🏆' + red.victorias[3 - red.yo];
+      mc.nombres(n);
+      mc.pintar({ 1: partida.puntos[1], Q: String(partida.cartas.length / 2 - partida.parejas), 2: partida.puntos[2] });
+      mc.turno(M.terminada(partida) ? null : String(partida.turno));
     } else {
       // Las victorias acumuladas van junto al nombre
       mc.nombres({ 1: 'Jugador 1 🏆' + datos.victorias[1], 2: 'Jugador 2 🏆' + datos.victorias[2] });
@@ -99,6 +109,7 @@
 
   function pintarTurno() {
     if (solo()) ponerEstado(partida.intentos ? 'Sigue buscando parejas' : 'Toca dos cartas para buscar su pareja');
+    else if (red) ponerEstado(partida.turno === red.yo ? 'Te toca: levanta dos cartas' : 'Turno de ' + red.rival + '…', 'j' + partida.turno);
     else ponerEstado('Turno del jugador ' + partida.turno, 'j' + partida.turno);
   }
 
@@ -138,16 +149,25 @@
     pintarTurno();
   }
 
-  function nuevaPartida() {
+  // "recibida": partida que manda el otro móvil (con las cartas ya barajadas)
+  function nuevaPartida(recibida) {
     ficha++; // invalida temporizadores pendientes
     pararReloj();
     inicio = 0;
-    partida = M.nueva(datos.nivel, solo() ? 1 : 2);
-    if (!solo()) {
-      partida.turno = empieza;
-      empieza = empieza === 1 ? 2 : 1; // la próxima empieza el otro
+    colaRed = [];
+    if (recibida) {
+      partida = recibida;
+      empieza = partida.turno === 1 ? 2 : 1;
+    } else {
+      partida = M.nueva(datos.nivel, solo() ? 1 : 2);
+      if (!solo()) {
+        partida.turno = empieza;
+        empieza = empieza === 1 ? 2 : 1; // la próxima empieza el otro
+      }
+      // Con otro móvil, las mismas cartas para los dos
+      if (red) sala.enviar({ t: 'nueva', partida: partida });
     }
-    guardada.borrar();
+    if (!red) guardada.borrar();
     mostrar();
   }
 
@@ -173,11 +193,19 @@
 
   el.tablero.addEventListener('click', function (e) {
     if (bloqueo || M.terminada(partida)) return;
+    if (red && partida.turno !== red.yo) return;
     var c = e.target.closest ? e.target.closest('.carta') : null;
     if (!c) return;
-    var i = parseInt(c.getAttribute('data-i'), 10);
+    voltearCarta(parseInt(c.getAttribute('data-i'), 10));
+  });
+
+  // Levanta la carta i (tocada aquí o en el otro móvil)
+  function voltearCarta(i) {
+    var c = cartas[i];
+    var turnoAntes = partida.turno;
     var r = M.voltear(partida, i);
     if (r === 'invalida') return;
+    if (red && turnoAntes === red.yo) sala.enviar({ t: 'carta', i: i });
 
     if (!inicio) {
       inicio = Date.now();
@@ -193,7 +221,9 @@
       });
       pintarMarcador();
       if (M.terminada(partida)) return finPartida();
-      ponerEstado(solo() ? '¡Pareja!' : '¡Pareja! Repite el jugador ' + partida.turno, solo() ? 'bien' : 'j' + partida.turno);
+      var quien = red ? (partida.turno === red.yo ? '¡Pareja! Repites' : '¡Pareja de ' + red.rival + '! Repite')
+        : '¡Pareja! Repite el jugador ' + partida.turno;
+      ponerEstado(solo() ? '¡Pareja!' : quien, solo() ? 'bien' : 'j' + partida.turno);
       vibrar(40);
       guardarPartida();
     } else if (r === 'fallo') {
@@ -214,12 +244,15 @@
         pintarMarcador();
         pintarTurno();
         guardarPartida();
+        cartaRed();
       }, 1050);
     }
-  });
+    cartaRed();
+  }
 
   function finPartida() {
     pararReloj();
+    if (red) return finRed();
     guardada.borrar();
     var r = M.resultado(partida);
     if (solo()) {
@@ -242,9 +275,84 @@
   }
 
   // ---------- Controles ----------
-  document.getElementById('nueva').addEventListener('click', nuevaPartida);
+  // ---------- Con otro móvil cercano (cerca.js) ----------
+  // El que crea la partida es el jugador 1 y el que se une el 2.
+  // Mensajes: { t: 'nueva', partida } (cartas barajadas) y { t: 'carta', i }
+  var sala = null, red = null, colaRed = [];
+
+  function entrarCerca() {
+    sala = Cerca.abrir({
+      juego: 'memoria',
+      alConectar: function (info) {
+        red = { yo: info.anfitrion ? 1 : 2, rival: info.rival, victorias: { 1: 0, 2: 0 } };
+        empieza = 1;
+        if (info.anfitrion) nuevaPartida();
+        else {
+          // Espera las cartas del otro: mientras, un tablero sin turno para nadie
+          ficha++;
+          pararReloj();
+          partida = M.nueva(datos.nivel, 2);
+          partida.turno = 0;
+          mostrar();
+          ponerEstado('Conectado con ' + red.rival + '…');
+        }
+      },
+      alMensaje: function (m) {
+        if (!red || !m) return;
+        if (m.t === 'nueva' && m.partida && Array.isArray(m.partida.cartas) && m.partida.jugadores === 2) nuevaPartida(m.partida);
+        else if (m.t === 'carta' && typeof m.i === 'number') {
+          colaRed.push(m.i);
+          cartaRed();
+        }
+      },
+      alCerrar: function () {
+        var habia = !!red;
+        sala = null;
+        red = null;
+        modos.poner(datos.modo);
+        if (!habia) return pintarAjustes();
+        // Vuelve al modo de antes, con su partida a medias si la había
+        ficha++;
+        empieza = 1;
+        if (!recuperar()) nuevaPartida();
+      }
+    });
+  }
+
+  function salirCerca() {
+    if (sala) sala.cerrar();
+    sala = null;
+    red = null;
+  }
+
+  // Levanta la carta del otro móvil cuando ya se han tapado las de antes
+  function cartaRed() {
+    if (!red || bloqueo || !colaRed.length || M.terminada(partida) || partida.turno === red.yo) return;
+    voltearCarta(colaRed.shift());
+  }
+
+  function finRed() {
+    var r = M.resultado(partida);
+    if (r.ganador) {
+      red.victorias[r.ganador]++;
+      var gano = r.ganador === red.yo;
+      ponerEstado((gano ? '¡Has ganado! 🎉' : 'Gana ' + red.rival) + ' (' + partida.puntos[red.yo] + ' a ' + partida.puntos[3 - red.yo] + ')', 'j' + r.ganador);
+      mc.saltar(String(r.ganador));
+    } else {
+      ponerEstado('Empate a ' + r.puntos[0] + ' parejas');
+    }
+    vibrar(220);
+    pintarMarcador();
+  }
+
+  document.getElementById('nueva').addEventListener('click', function () { nuevaPartida(); });
 
   document.getElementById('borrar').addEventListener('click', function () {
+    if (red) {
+      red.victorias = { 1: 0, 2: 0 };
+      pintarMarcador();
+      return;
+    }
     if (solo()) delete datos.records[datos.nivel];
     else datos.victorias = { 1: 0, 2: 0, E: 0 };
     guardar();

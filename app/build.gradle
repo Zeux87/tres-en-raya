@@ -47,3 +47,8 @@ android {
         abortOnError false
     }
 }
+
+dependencies {
+    // Partidas entre dos móviles cercanos (Bluetooth / wifi, sin internet)
+    implementation 'com.google.android.gms:play-services-nearby:19.3.0'
+}

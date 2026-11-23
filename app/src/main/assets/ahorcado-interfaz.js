@@ -33,6 +33,8 @@
   };
 
   var modos = P.segmentos(document.getElementById('modos'), datos.modo, function (m) {
+    if (m === 'cerca') return entrarCerca();
+    salirCerca();
     datos.modo = m;
     guardar();
     escribe = 1;
@@ -59,12 +61,13 @@
 
   // La partida a medias se guarda tras cada letra y se borra al terminar
   function guardarPartida() {
+    if (red) return; // con otro móvil no se guarda: al volver ya no hay conexión
     if (!partida || terminada || !partida.probadas.length) return guardada.borrar();
     guardada.guardar({ modo: datos.modo, partida: partida, escribe: escribe });
   }
 
   // ---------- Utilidades ----------
-  function solo() { return datos.modo === 'solo'; }
+  function solo() { return !red && datos.modo === 'solo'; }
   function adivina() { return escribe === 1 ? 2 : 1; }
   var vibrar = P.vibrar;
   function ponerEstado(texto, clase) {
@@ -86,7 +89,7 @@
   }
 
   function pintarAjustes() {
-    modos.poner(datos.modo);
+    modos.poner(sala ? 'cerca' : datos.modo);
     categorias.poner(datos.categoria);
     categorias.ver(solo());
     el.pantalla.classList.toggle('dos', !solo());
@@ -98,7 +101,13 @@
   function pintarMarcador() {
     var f = (partida ? partida.fallos : 0) + '/' + A.MAX_FALLOS;
     if (solo()) mc.pintar({ 1: datos.solo.ganadas, F: f, 2: datos.solo.perdidas });
-    else mc.pintar({ 1: datos.dos[1], F: f, 2: datos.dos[2] });
+    else if (red) {
+      var n = {};
+      n[red.yo] = 'Tú';
+      n[3 - red.yo] = red.rival;
+      mc.nombres(n);
+      mc.pintar({ 1: red.puntos[1], F: f, 2: red.puntos[2] });
+    } else mc.pintar({ 1: datos.dos[1], F: f, 2: datos.dos[2] });
     mc.turno(!solo() && partida && !terminada ? String(adivina()) : null);
   }
 
@@ -135,11 +144,16 @@
 
   function pintarTurno() {
     if (solo()) ponerEstado('Elige una letra');
-    else ponerEstado('Adivina el jugador ' + adivina(), 'j' + adivina());
+    else if (red) {
+      if (adivina() === red.yo) ponerEstado('Te toca adivinar: elige una letra', 'j' + red.yo);
+      else ponerEstado(red.rival + ' está adivinando «' + partida.palabra + '»', 'j' + adivina());
+    } else ponerEstado('Adivina el jugador ' + adivina(), 'j' + adivina());
   }
 
   // ---------- Juego ----------
-  function nuevaPartida() {
+  // "recibida": la empieza el otro móvil (ya está decidido quién escribe)
+  function nuevaPartida(recibida) {
+    if (red && !recibida) sala.enviar({ t: 'nueva', escribe: escribe });
     terminada = false;
     partida = null;
     crearTeclado();
@@ -167,13 +181,18 @@
     el.teclado.classList.add('oculto');
     el.palabra.classList.add('oculto');
     el.textoSecreto.textContent = 'Jugador ' + escribe + ': escribe una palabra sin que la vea el jugador ' + adivina() + '.';
+    if (red) {
+      el.textoSecreto.textContent = 'Escribe una palabra para que la adivine ' + red.rival + '.';
+      // Si escribe el otro, aquí solo se espera
+      el.secreto.classList.toggle('oculto', escribe !== red.yo);
+    }
     el.secreta.value = '';
     el.pistaSecreta.value = '';
     el.secreta.classList.add('tapada');
     el.verSecreta.textContent = 'Ver';
     el.error.textContent = '';
-    guardada.borrar();
-    ponerEstado('');
+    if (!red) guardada.borrar();
+    ponerEstado(red && escribe !== red.yo ? red.rival + ' está pensando una palabra…' : '');
     pintarDibujo();
     pintarMarcador();
   }
@@ -212,8 +231,10 @@
     return true;
   }
 
-  function probar(letra) {
+  // "remota": la ha elegido el otro móvil
+  function probar(letra, remota) {
     if (!partida || terminada) return;
+    if (red && !remota && adivina() !== red.yo) return;
     var base = A.normalizar(letra);
     var r = A.probar(partida, letra);
     if (r === 'invalida' || r === 'terminada') return;
@@ -223,6 +244,7 @@
       return;
     }
     guardarPartida();
+    if (red && !remota) sala.enviar({ t: 'letra', l: letra });
     var t = teclas[base];
     if (t) t.classList.add(r === 'acierto' ? 'bien' : 'mal');
     pintarDibujo();
@@ -233,18 +255,18 @@
     if (fin) return finPartida(fin);
 
     if (r === 'acierto') {
-      ponerEstado('¡Bien! Hay ' + base, 'bien');
+      ponerEstado((red && adivina() !== red.yo ? red.rival + ' acierta: hay ' : '¡Bien! Hay ') + base, 'bien');
       vibrar(14);
     } else {
       var quedan = A.MAX_FALLOS - partida.fallos;
-      ponerEstado('No hay ' + base + ' · te ' + (quedan === 1 ? 'queda 1 fallo' : 'quedan ' + quedan + ' fallos'), 'mal');
+      ponerEstado('No hay ' + base + ' · ' + (red && adivina() !== red.yo ? 'le' : 'te') + ' ' + (quedan === 1 ? 'queda 1 fallo' : 'quedan ' + quedan + ' fallos'), 'mal');
       vibrar(50);
     }
   }
 
   function finPartida(fin) {
     terminada = true;
-    guardada.borrar();
+    if (!red) guardada.borrar();
     el.teclado.classList.add('parado');
     el.escena.classList.add(fin === 'gana' ? 'ganada' : 'perdida');
     if (solo()) {
@@ -263,6 +285,15 @@
         mc.saltar('2');
         vibrar(90);
       }
+    } else if (red) {
+      var gr = fin === 'gana' ? adivina() : escribe;
+      red.puntos[gr]++;
+      var yoGano = gr === red.yo;
+      if (adivina() === red.yo) ponerEstado(fin === 'gana' ? '¡La has adivinado! 🎉' : 'Ahorcado. Era «' + partida.palabra + '»', 'j' + gr);
+      else ponerEstado(fin === 'gana' ? red.rival + ' la ha adivinado' : '¡' + red.rival + ' no la ha adivinado! 🎉', 'j' + gr);
+      mc.saltar(String(gr));
+      vibrar(yoGano ? 220 : 90);
+      escribe = adivina(); // la próxima escribe el otro
     } else {
       var g = fin === 'gana' ? adivina() : escribe;
       datos.dos[g]++;
@@ -300,6 +331,7 @@
     }
     el.secreta.blur();
     el.pistaSecreta.blur();
+    if (red) sala.enviar({ t: 'palabra', palabra: r.palabra, pista: el.pistaSecreta.value.trim() });
     empezar(r.palabra, el.pistaSecreta.value.trim());
   });
   el.secreta.addEventListener('keydown', function (e) {
@@ -313,9 +345,58 @@
     el.verSecreta.textContent = tapada ? 'Ver' : 'Ocultar';
   });
 
-  document.getElementById('nueva').addEventListener('click', nuevaPartida);
+  // ---------- Con otro móvil cercano (cerca.js) ----------
+  // El que crea la partida es el jugador 1 y escribe primero; luego se turnan.
+  // Mensajes: { t: 'nueva', escribe }, { t: 'palabra', palabra, pista } y { t: 'letra', l }
+  var sala = null, red = null;
+
+  function entrarCerca() {
+    sala = Cerca.abrir({
+      juego: 'ahorcado',
+      alConectar: function (info) {
+        red = { yo: info.anfitrion ? 1 : 2, rival: info.rival, puntos: { 1: 0, 2: 0 } };
+        escribe = 1;
+        nuevaPartida(true);
+      },
+      alMensaje: function (m) {
+        if (!red || !m) return;
+        if (m.t === 'nueva' && (m.escribe === 1 || m.escribe === 2)) {
+          escribe = m.escribe;
+          nuevaPartida(true);
+        } else if (m.t === 'palabra' && escribe !== red.yo && typeof m.palabra === 'string') {
+          var r = A.limpiarPalabra(m.palabra);
+          if (!r.error) empezar(r.palabra, String(m.pista || '').slice(0, 30));
+        } else if (m.t === 'letra' && typeof m.l === 'string' && adivina() !== red.yo) {
+          probar(m.l, true);
+        }
+      },
+      alCerrar: function () {
+        var habia = !!red;
+        sala = null;
+        red = null;
+        modos.poner(datos.modo);
+        if (!habia) return pintarAjustes();
+        // Vuelve al modo de antes, con su partida a medias si la había
+        escribe = 1;
+        if (!recuperar()) nuevaPartida();
+      }
+    });
+  }
+
+  function salirCerca() {
+    if (sala) sala.cerrar();
+    sala = null;
+    red = null;
+  }
+
+  document.getElementById('nueva').addEventListener('click', function () { nuevaPartida(); });
 
   document.getElementById('borrar').addEventListener('click', function () {
+    if (red) {
+      red.puntos = { 1: 0, 2: 0 };
+      pintarMarcador();
+      return;
+    }
     if (solo()) datos.solo = { ganadas: 0, perdidas: 0, racha: 0, mejorRacha: 0 };
     else datos.dos = { 1: 0, 2: 0 };
     guardar();
