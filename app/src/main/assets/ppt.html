@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Piedra, papel o tijera</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root { --tu: #ef5b5b; --movil: #1fa39a; }
+  @media (prefers-color-scheme: dark) { :root { --tu: #ff7070; --movil: #3fd0c4; } }
+  h1 { font-size: 22px; }
+
+  .arena {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    background: var(--tarjeta);
+    border-radius: 20px;
+    box-shadow: var(--sombra);
+    padding: 18px 10px;
+  }
+  .lado { text-align: center; }
+  .lado .quien { font-size: 13px; font-weight: 700; color: var(--suave); }
+  .mano { font-size: 64px; line-height: 1.25; display: inline-block; }
+  #manoT { transform: scaleX(-1); } /* las dos manos se miran */
+  .vs { font-weight: 800; color: var(--suave); font-size: 15px; }
+  .agitar #manoT { animation: agitarT .2s ease-in-out 3 alternate; }
+  .agitar #manoM { animation: agitarM .2s ease-in-out 3 alternate; }
+  @keyframes agitarT { from { transform: scaleX(-1) translateY(0); } to { transform: scaleX(-1) translateY(-14px); } }
+  @keyframes agitarM { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+  .mano.gana { animation: salto .45s ease; }
+  .mano.pierde { opacity: .35; transition: opacity .3s; }
+
+  #estado { text-align: center; font-size: 19px; font-weight: 700; min-height: 26px; }
+  #estado.gana { color: var(--tu); }
+  #estado.pierde { color: var(--movil); }
+  #racha { text-align: center; font-size: 14px; color: var(--suave); margin-top: -8px; min-height: 18px; }
+
+  .opciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .opciones button {
+    border: 0;
+    border-radius: 18px;
+    background: var(--tarjeta);
+    color: var(--texto);
+    box-shadow: var(--sombra);
+    font: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 4px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform .1s, opacity .2s;
+  }
+  .opciones button span { font-size: 40px; line-height: 1.1; }
+  .opciones button:active { transform: scale(.95); }
+  .opciones button:disabled { opacity: .5; }
+  #ayuda { text-align: center; font-size: 13px; color: var(--suave); }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Piedra, papel o tijera</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="niveles">
+    <button data-nivel="facil">Al azar</button>
+    <button data-nivel="listo">Listo</button>
+  </div>
+  <div id="ayuda"></div>
+
+  <div id="marcador"></div>
+
+  <div class="arena" id="arena">
+    <div class="lado"><div class="quien">Tú</div><div class="mano" id="manoT">✊</div></div>
+    <div class="vs">VS</div>
+    <div class="lado"><div class="quien">Móvil</div><div class="mano" id="manoM">✊</div></div>
+  </div>
+
+  <div id="estado">Elige tu jugada</div>
+  <div id="racha"></div>
+
+  <div class="opciones" id="opciones">
+    <button data-jugada="piedra"><span>✊</span>Piedra</button>
+    <button data-jugada="papel"><span>✋</span>Papel</button>
+    <button data-jugada="tijera"><span>✌️</span>Tijera</button>
+  </div>
+
+  <div class="acciones">
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="ppt.js"></script>
+<script src="ppt-interfaz.js"></script>
+</body>
+</html>

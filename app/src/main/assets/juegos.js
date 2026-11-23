@@ -48,5 +48,54 @@
       '<rect x="34" y="22" width="4" height="9" fill="#e8eef6"/>' +
       '<circle cx="58" cy="20" r="6" fill="#ff6b6b"/>' +
       '<path d="M54 16l8 8M62 16l-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>'
+  },
+  {
+    id: 'ppt',
+    pagina: 'ppt.html',
+    titulo: 'Piedra, papel o tijera',
+    texto: 'Contra el móvil, que aprende tus manías',
+    icono:
+      '<rect width="76" height="76" fill="#e0703a"/>' +
+      '<text x="22" y="34" font-size="24" text-anchor="middle">✊</text>' +
+      '<text x="54" y="34" font-size="24" text-anchor="middle">✋</text>' +
+      '<text x="38" y="64" font-size="24" text-anchor="middle">✌️</text>'
+  },
+  {
+    id: 'buscaminas',
+    pagina: 'buscaminas.html',
+    titulo: 'Buscaminas',
+    texto: 'Tres tamaños, banderas y récord de tiempo',
+    icono:
+      '<rect width="76" height="76" fill="#5b6b86"/>' +
+      '<g fill="#b9c6d6"><rect x="8" y="8" width="18" height="18" rx="4"/><rect x="29" y="8" width="18" height="18" rx="4"/><rect x="50" y="29" width="18" height="18" rx="4"/><rect x="8" y="50" width="18" height="18" rx="4"/><rect x="50" y="50" width="18" height="18" rx="4"/></g>' +
+      '<g fill="#eef1f5"><rect x="50" y="8" width="18" height="18" rx="4"/><rect x="8" y="29" width="18" height="18" rx="4"/><rect x="29" y="29" width="18" height="18" rx="4"/><rect x="29" y="50" width="18" height="18" rx="4"/></g>' +
+      '<text x="17" y="43" font-size="14" font-weight="800" fill="#2d6cdf" text-anchor="middle" font-family="sans-serif">1</text>' +
+      '<text x="38" y="43" font-size="14" font-weight="800" fill="#2a9a4b" text-anchor="middle" font-family="sans-serif">2</text>' +
+      '<path d="M57 54v11M57 54l8 3-8 3" stroke="#e0433f" stroke-width="2.4" fill="#e0433f" stroke-linejoin="round"/>'
+  },
+  {
+    id: 'snake',
+    pagina: 'snake.html',
+    titulo: 'Snake',
+    texto: 'Come, crece y no te muerdas',
+    icono:
+      '<rect width="76" height="76" fill="#1f7a43"/>' +
+      '<path d="M14 58h22V38h26V20" fill="none" stroke="#7be3a5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<circle cx="62" cy="20" r="6.5" fill="#bdf2d2"/>' +
+      '<circle cx="60" cy="18" r="1.6" fill="#1f7a43"/><circle cx="64" cy="18" r="1.6" fill="#1f7a43"/>' +
+      '<circle cx="24" cy="24" r="5" fill="#ff6b6b"/>'
+  },
+  {
+    id: '2048',
+    pagina: '2048.html',
+    titulo: '2048',
+    texto: 'Desliza y junta números hasta llegar a 2048',
+    icono:
+      '<rect width="76" height="76" fill="#bdb1a3"/>' +
+      '<rect x="7" y="7" width="29" height="29" rx="5" fill="#eee4da"/>' +
+      '<rect x="40" y="7" width="29" height="29" rx="5" fill="#f2b179"/>' +
+      '<rect x="7" y="40" width="29" height="29" rx="5" fill="#f65e3b"/>' +
+      '<rect x="40" y="40" width="29" height="29" rx="5" fill="#edc22e"/>' +
+      '<g font-family="sans-serif" font-weight="800" text-anchor="middle"><text x="21.5" y="27" font-size="16" fill="#776e65">2</text><text x="54.5" y="27" font-size="16" fill="#fff">8</text><text x="21.5" y="60" font-size="14" fill="#fff">64</text><text x="54.5" y="59" font-size="10" fill="#fff">2048</text></g>'
   }
 ]);

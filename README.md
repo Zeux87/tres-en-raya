@@ -1,6 +1,6 @@
 # Juegos
 
-App Android con tres juegos:
+App Android con siete juegos:
 
 **3 en raya**
 - Contra el móvil con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
@@ -19,8 +19,24 @@ App Android con tres juegos:
 - Si aciertas, vuelves a disparar; si es agua, pasas el móvil. Al hundir un barco se marca el agua de alrededor.
 - Pantalla tapada para pasar el móvil sin ver la flota del otro, estadísticas y victorias por jugador.
 
-Todos los juegos guardan la partida a medias si se cierra la app (el menú avisa con "partida a medias")
-y comparten marcador, botón "‹ Menú" y estilos a través de una plantilla común.
+**Piedra, papel o tijera**
+- Contra el móvil: «Al azar» o «Listo», que se fija en lo que sueles sacar tras tus últimas jugadas e intenta adelantarse.
+- Marcador y mejor racha guardados por nivel.
+
+**Buscaminas**
+- Tres tamaños: Fácil (8×10, 10 minas), Normal (10×14, 24) y Difícil (12×16, 40). El primer toque nunca es mina.
+- Banderas con el botón 🚩 o manteniendo pulsado; tocar un número con sus banderas puestas abre lo de alrededor.
+- Récord de tiempo por nivel y partida guardada si sales.
+
+**Snake**
+- Tres velocidades, que aumentan un poco según comes. Se gira deslizando el dedo o con las flechas.
+- Récord por velocidad; se pone en pausa y se guarda si sales de la app.
+
+**2048**
+- Desliza para mover; dos fichas iguales se juntan. Récord, deshacer el último movimiento y partida guardada.
+
+Todos los juegos comparten una plantilla común (marcador, partida guardada, botón "‹ Menú" y estilos).
+Los que se juegan por partidas las guardan si se cierra la app, y el menú avisa con "partida a medias".
 
 Además: tema claro/oscuro automático, vibración y **actualización automática** desde Releases.
 
@@ -48,6 +64,10 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 | `app/src/main/assets/tresenraya.html`, `interfaz.js`, `juego.js` | 3 en raya: pantalla, interfaz y lógica (minimax con poda alfa-beta) |
 | `app/src/main/assets/conecta4.html`, `conecta4-interfaz.js`, `conecta4.js` | Conecta 4: pantalla, interfaz y lógica con la IA |
 | `app/src/main/assets/flota.html`, `flota-interfaz.js`, `flota.js` | Hundir la flota: pantalla, interfaz y lógica |
+| `app/src/main/assets/ppt.html`, `ppt-interfaz.js`, `ppt.js` | Piedra, papel o tijera |
+| `app/src/main/assets/buscaminas.html`, `buscaminas-interfaz.js`, `buscaminas.js` | Buscaminas |
+| `app/src/main/assets/snake.html`, `snake-interfaz.js`, `snake.js` | Snake |
+| `app/src/main/assets/2048.html`, `2048-interfaz.js`, `2048.js` | 2048 |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
 | `herramientas/` | Pruebas (`todas.js` las lanza todas) y `plantilla/` para empezar un juego nuevo |
 

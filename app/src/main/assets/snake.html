@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Snake</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --campo: #e3eedb;
+    --campo2: #d8e7cd;
+    --serpiente: #2f9e5b;
+    --cabeza: #1f7a43;
+    --comida: #ef5b5b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --campo: #1b2420;
+      --campo2: #18201c;
+      --serpiente: #45c97a;
+      --cabeza: #7be3a5;
+      --comida: #ff6b6b;
+    }
+  }
+  body { touch-action: none; overscroll-behavior: none; }
+  .panel { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: stretch; }
+  .dato {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 8px 10px;
+    text-align: center;
+    box-shadow: var(--sombra);
+  }
+  .dato .nombre { font-size: 12px; color: var(--suave); font-weight: 600; }
+  .dato .valor { font-size: 24px; font-weight: 800; line-height: 1.2; }
+  #pausa {
+    border: 0;
+    border-radius: 14px;
+    background: var(--tarjeta);
+    color: var(--texto);
+    box-shadow: var(--sombra);
+    font-size: 22px;
+    width: 56px;
+  }
+  .campo { position: relative; }
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: var(--sombra);
+    background: var(--campo);
+  }
+  .aviso {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, .38);
+    border-radius: 16px;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+  }
+  .aviso .grande { font-size: 26px; font-weight: 800; }
+  .aviso .peque { font-size: 15px; opacity: .9; }
+  .aviso .boton { flex: none; padding: 14px 28px; }
+
+  .mando {
+    display: grid;
+    grid-template-columns: repeat(3, 64px);
+    grid-template-rows: repeat(2, 52px);
+    gap: 8px;
+    justify-content: center;
+  }
+  .mando button {
+    border: 0;
+    border-radius: 14px;
+    background: var(--tarjeta);
+    color: var(--texto);
+    box-shadow: var(--sombra);
+    font-size: 24px;
+  }
+  .mando button:active { transform: scale(.94); background: var(--acento); color: #fff; }
+  .mando .arriba { grid-column: 2; grid-row: 1; }
+  .mando .izq { grid-column: 1; grid-row: 2; }
+  .mando .abajo { grid-column: 2; grid-row: 2; }
+  .mando .der { grid-column: 3; grid-row: 2; }
+  #ayuda { text-align: center; font-size: 13px; color: var(--suave); margin-top: -6px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Snake</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="niveles">
+    <button data-nivel="lento">Lento</button>
+    <button data-nivel="normal">Normal</button>
+    <button data-nivel="rapido">Rápido</button>
+  </div>
+
+  <div class="panel">
+    <div class="dato"><div class="nombre">Puntos</div><div class="valor" id="puntos">0</div></div>
+    <div class="dato"><div class="nombre">Récord</div><div class="valor" id="record">0</div></div>
+    <button id="pausa" aria-label="Pausa">⏸</button>
+  </div>
+
+  <div class="campo">
+    <canvas id="lienzo"></canvas>
+    <div class="aviso" id="aviso">
+      <div class="grande" id="avisoTitulo">Snake</div>
+      <div class="peque" id="avisoTexto">Desliza el dedo o usa las flechas para girar</div>
+      <button class="boton" id="avisoBoton">Empezar</button>
+    </div>
+  </div>
+
+  <div class="mando" id="mando">
+    <button class="arriba" data-dir="arriba" aria-label="Arriba">▲</button>
+    <button class="izq" data-dir="izq" aria-label="Izquierda">◀</button>
+    <button class="abajo" data-dir="abajo" aria-label="Abajo">▼</button>
+    <button class="der" data-dir="der" aria-label="Derecha">▶</button>
+  </div>
+  <div id="ayuda">También puedes deslizar el dedo sobre la pantalla</div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="snake.js"></script>
+<script src="snake-interfaz.js"></script>
+</body>
+</html>

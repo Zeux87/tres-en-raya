@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>2048</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --caja: #bdb1a3;
+    --hueco: #d6cdc2;
+    --oscuro: #776e65;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --caja: #2c2934;
+      --hueco: #3a3644;
+      --oscuro: #f1eff6;
+    }
+  }
+  body { touch-action: none; overscroll-behavior: none; }
+  .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dato {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 8px 10px;
+    text-align: center;
+    box-shadow: var(--sombra);
+  }
+  .dato .nombre { font-size: 12px; color: var(--suave); font-weight: 600; }
+  .dato .valor { font-size: 24px; font-weight: 800; line-height: 1.2; }
+  .dato .suma { font-size: 14px; color: var(--acento); font-weight: 800; margin-left: 4px; opacity: 0; }
+  .dato .suma.ver { animation: subir .6s ease-out; }
+  @keyframes subir { 0% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+
+  .caja {
+    position: relative;
+    background: var(--caja);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: var(--sombra);
+  }
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .celda {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: var(--hueco);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 34px;
+    color: var(--oscuro);
+  }
+  .celda.d3 { font-size: 28px; }
+  .celda.d4 { font-size: 23px; }
+  .celda.d5 { font-size: 18px; }
+  .v2 { background: #eee4da; color: #776e65; }
+  .v4 { background: #ede0c8; color: #776e65; }
+  .v8 { background: #f2b179; color: #fff; }
+  .v16 { background: #f59563; color: #fff; }
+  .v32 { background: #f67c5f; color: #fff; }
+  .v64 { background: #f65e3b; color: #fff; }
+  .v128 { background: #edcf72; color: #fff; }
+  .v256 { background: #edcc61; color: #fff; }
+  .v512 { background: #edc850; color: #fff; }
+  .v1024 { background: #edc53f; color: #fff; }
+  .v2048 { background: #edc22e; color: #fff; box-shadow: 0 0 18px rgba(237, 194, 46, .6); }
+  .vmas { background: #3c3a32; color: #fff; }
+  .aparece { animation: aparece .18s ease-out; }
+  .junta { animation: junta .2s ease-out; }
+  @keyframes aparece { from { transform: scale(.2); opacity: .2; } to { transform: scale(1); opacity: 1; } }
+  @keyframes junta { 0% { transform: scale(1); } 50% { transform: scale(1.16); } 100% { transform: scale(1); } }
+
+  .aviso {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, .42);
+    border-radius: 16px;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+  }
+  .aviso .grande { font-size: 28px; font-weight: 800; }
+  .aviso .peque { font-size: 15px; opacity: .9; }
+  .aviso .acciones { width: 100%; max-width: 300px; }
+  #ayuda { text-align: center; font-size: 13px; color: var(--suave); }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>2048</h1>
+    <span></span>
+  </div>
+
+  <div class="panel">
+    <div class="dato"><div class="nombre">Puntos<span class="suma" id="suma"></span></div><div class="valor" id="puntos">0</div></div>
+    <div class="dato"><div class="nombre">Récord</div><div class="valor" id="record">0</div></div>
+  </div>
+
+  <div class="caja">
+    <div class="tablero" id="tablero"></div>
+    <div class="aviso oculto" id="aviso">
+      <div class="grande" id="avisoTitulo"></div>
+      <div class="peque" id="avisoTexto"></div>
+      <div class="acciones">
+        <button class="boton secundario oculto" id="avisoSeguir">Seguir jugando</button>
+        <button class="boton" id="avisoNueva">Otra partida</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ayuda">Desliza para mover las fichas. Dos iguales se juntan.</div>
+
+  <div class="acciones">
+    <button class="boton secundario" id="deshacer">↶ Deshacer</button>
+    <button class="boton" id="nueva">Nueva partida</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="2048.js"></script>
+<script src="2048-interfaz.js"></script>
+</body>
+</html>
