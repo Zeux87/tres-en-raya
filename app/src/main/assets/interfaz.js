@@ -23,8 +23,7 @@
     puntosE: document.getElementById('puntosE'),
     puntosO: document.getElementById('puntosO'),
     modos: document.getElementById('modos'),
-    dificultades: document.getElementById('dificultades'),
-    pie: document.getElementById('pie')
+    dificultades: document.getElementById('dificultades')
   };
 
   // ---------- Persistencia ----------
@@ -251,17 +250,6 @@
     guardar();
     pintarMarcador();
   });
-
-  // ---------- Pie con versión y actualizaciones (solo en la app) ----------
-  if (Android && Android.version) {
-    var v = document.createElement('span');
-    v.textContent = 'Versión ' + Android.version() + ' · ';
-    var b = document.createElement('button');
-    b.textContent = 'Buscar actualizaciones';
-    b.addEventListener('click', function () { Android.buscarActualizacion(); });
-    el.pie.appendChild(v);
-    el.pie.appendChild(b);
-  }
 
   nuevaPartida();
 })();

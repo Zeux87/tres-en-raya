@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Hundir la flota</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  h1 { font-size: 22px; }
+  h2 { margin: 0 0 8px; font-size: 16px; }
+  .centro { text-align: center; }
+  .suave { color: var(--suave); }
+  .reglas { font-size: 14px; line-height: 1.5; color: var(--suave); margin: 0; }
+  .reglas b { color: var(--texto); }
+
+  /* Nombres */
+  .campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .campo label { font-size: 13px; font-weight: 700; color: var(--suave); }
+  .campo input {
+    font: inherit;
+    font-size: 17px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid var(--rejilla);
+    background: var(--fondo);
+    color: var(--texto);
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .campo input:focus { outline: none; border-color: var(--acento); }
+  .victorias { display: flex; justify-content: space-around; text-align: center; }
+  .victorias .num { font-size: 28px; font-weight: 800; color: var(--acento); }
+  .victorias .quien { font-size: 13px; color: var(--suave); font-weight: 600; }
+
+  /* Pantalla de pasar el móvil */
+  .pase {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+  }
+  .pase .icono { font-size: 64px; }
+  .pase .quien { font-size: 34px; font-weight: 800; color: var(--acento); word-break: break-word; }
+  .pase .boton { flex: none; width: 100%; max-width: 320px; margin-top: 18px; }
+
+  /* Tableros */
+  .tablero {
+    display: grid;
+    grid-template-columns: 1.1em repeat(10, 1fr);
+    gap: 2px;
+    width: 100%;
+  }
+  .tablero.grande { font-size: 18px; }
+  .tablero.pequeno { font-size: 8px; gap: 1px; }
+  .coord {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .62em;
+    font-weight: 700;
+    color: var(--suave);
+    aspect-ratio: 1;
+  }
+  .tablero.pequeno .coord { font-size: 0; }
+  .celda {
+    aspect-ratio: 1;
+    background: var(--mar);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: #fff;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .tablero.pequeno .celda { border-radius: 1px; }
+  .celda.barco { background: var(--barco); border-radius: 1px; }
+  .celda.barco.b-h.b-ini { border-radius: 45% 1px 1px 45%; }
+  .celda.barco.b-h.b-fin { border-radius: 1px 45% 45% 1px; }
+  .celda.barco.b-v.b-ini { border-radius: 45% 45% 1px 1px; }
+  .celda.barco.b-v.b-fin { border-radius: 1px 1px 45% 45%; }
+  .celda.seleccionado { background: var(--acento); }
+  .celda.agua::after {
+    content: '';
+    width: 26%;
+    height: 26%;
+    border-radius: 50%;
+    background: var(--punto);
+  }
+  .celda.tocado { background: var(--tocado); }
+  .celda.tocado::after { content: '✕'; font-size: .8em; }
+  .celda.hundido { background: var(--hundido); }
+  .celda.ultimo { animation: impacto .5s ease; z-index: 1; }
+  .celda.invalida { animation: error .45s ease; }
+  .tablero.activo .celda:not(.agua):not(.tocado):active { filter: brightness(.85); }
+  @keyframes impacto {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.45); }
+    100% { transform: scale(1); }
+  }
+  @keyframes error {
+    0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+    30%, 70% { box-shadow: inset 0 0 0 3px var(--tocado); }
+  }
+
+  /* Colocación */
+  .barcos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 2px solid transparent;
+    background: var(--tarjeta);
+    color: var(--texto);
+    border-radius: 12px;
+    padding: 7px 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    box-shadow: var(--sombra);
+  }
+  .chip.activo { border-color: var(--acento); }
+  .chip.puesto { color: var(--suave); }
+  .chip .cuadros { display: flex; gap: 2px; }
+  .chip .cuadros i { width: 9px; height: 9px; border-radius: 2px; background: var(--barco); }
+  .chip.activo .cuadros i { background: var(--acento); }
+  .chip.puesto .nombre::after { content: ' ✓'; color: var(--o); }
+  .ayuda { font-size: 13px; color: var(--suave); text-align: center; min-height: 18px; margin: 0; }
+  .ayuda.error { color: var(--tocado); font-weight: 700; }
+
+  /* Batalla */
+  .cabecera { display: flex; justify-content: space-between; align-items: baseline; }
+  .cabecera .quien { font-size: 18px; font-weight: 800; }
+  .mensaje { text-align: center; font-size: 20px; font-weight: 800; min-height: 28px; }
+  .mensaje.agua { color: var(--punto); }
+  .mensaje.tocado { color: var(--tocado); }
+  .mensaje.hundido { color: var(--hundido); }
+  .mensaje.info { color: var(--suave); font-size: 15px; font-weight: 600; }
+  .abajo { display: grid; grid-template-columns: 46% 1fr; gap: 14px; align-items: start; }
+  .lista-enemiga { list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .lista-enemiga li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--rejilla); }
+  .lista-enemiga li.hundido { color: var(--suave); text-decoration: line-through; }
+  .lista-enemiga .cuadros { display: flex; gap: 2px; align-items: center; }
+  .lista-enemiga .cuadros i { width: 7px; height: 7px; border-radius: 2px; background: var(--barco); }
+  .lista-enemiga li.hundido .cuadros i { background: var(--hundido); }
+  .boton.peligro { background: none; color: var(--suave); box-shadow: none; font-size: 14px; padding: 8px; }
+  .boton.peligro.confirmar { color: var(--tocado); }
+
+  /* Final */
+  .trofeo { font-size: 56px; text-align: center; }
+  .ganador { font-size: 28px; font-weight: 800; text-align: center; color: var(--acento); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { font-size: 13px; color: var(--suave); margin-top: 6px; line-height: 1.5; }
+  .stat b { color: var(--texto); }
+</style>
+</head>
+<body>
+<main id="pantalla"></main>
+<script src="flota.js"></script>
+<script src="flota-interfaz.js"></script>
+</body>
+</html>

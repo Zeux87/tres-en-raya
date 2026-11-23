@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>3 en raya</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  h1 .x { color: var(--x); }
+  h1 .o { color: var(--o); }
+
+  .marcador {
+    display: grid;
+    grid-template-columns: 1fr .8fr 1fr;
+    gap: 10px;
+  }
+  .casillero {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 10px 6px;
+    text-align: center;
+    box-shadow: var(--sombra);
+    border: 2px solid transparent;
+    transition: border-color .25s, transform .25s;
+  }
+  .casillero .nombre { font-size: 13px; color: var(--suave); font-weight: 600; }
+  .casillero .puntos { font-size: 28px; font-weight: 800; line-height: 1.2; }
+  #casX .puntos { color: var(--x); }
+  #casO .puntos { color: var(--o); }
+  #casX.turno { border-color: var(--x); transform: translateY(-2px); }
+  #casO.turno { border-color: var(--o); transform: translateY(-2px); }
+
+  #estado {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    min-height: 26px;
+  }
+  #estado.gana-x { color: var(--x); }
+  #estado.gana-o { color: var(--o); }
+
+  .tablero-envoltura {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .tablero {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 8px;
+    background: var(--rejilla);
+    border-radius: 20px;
+    padding: 8px;
+    box-shadow: var(--sombra);
+  }
+  .casilla {
+    border: 0;
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 14%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s, opacity .3s;
+  }
+  .casilla:active:not(.ocupada) { background: var(--fondo); }
+  .casilla svg { width: 100%; height: 100%; overflow: visible; }
+  .casilla.apagada { opacity: .35; }
+  .casilla.ganadora { background: var(--fondo); }
+
+  .trazo {
+    fill: none;
+    stroke-width: 13;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: dibujar .28s ease-out forwards;
+  }
+  .trazo.x { stroke: var(--x); }
+  .trazo.o { stroke: var(--o); }
+  .trazo.retraso { animation-delay: .14s; }
+
+  #linea {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #linea line {
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: dibujar .4s .15s ease-out forwards;
+    opacity: .9;
+  }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html" onclick="if (history.length > 1) { history.back(); return false; }">‹ Menú</a>
+    <h1><span class="x">3</span> en <span class="o">raya</span></h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-modo="movil">Contra el móvil</button>
+    <button data-modo="dos">2 jugadores</button>
+  </div>
+
+  <div class="segmentos" id="dificultades">
+    <button data-dif="facil">Fácil</button>
+    <button data-dif="normal">Normal</button>
+    <button data-dif="imposible">Imposible</button>
+  </div>
+
+  <div class="marcador">
+    <div class="casillero" id="casX"><div class="nombre" id="nombreX">Tú (X)</div><div class="puntos" id="puntosX">0</div></div>
+    <div class="casillero" id="casE"><div class="nombre">Empates</div><div class="puntos" id="puntosE">0</div></div>
+    <div class="casillero" id="casO"><div class="nombre" id="nombreO">Móvil (O)</div><div class="puntos" id="puntosO">0</div></div>
+  </div>
+
+  <div id="estado"></div>
+
+  <div class="tablero-envoltura">
+    <div class="tablero" id="tablero"></div>
+    <svg id="linea" viewBox="0 0 300 300"></svg>
+  </div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="juego.js"></script>
+<script src="interfaz.js"></script>
+</body>
+</html>

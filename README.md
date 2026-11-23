@@ -1,12 +1,19 @@
-# 3 en raya
+# Juegos
 
-Juego de 3 en raya para Android.
+App Android con dos juegos:
 
-- **Contra el móvil** con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
-- **2 jugadores** en el mismo móvil.
+**3 en raya**
+- Contra el móvil con tres niveles: Fácil, Normal e Imposible (juego perfecto: nunca pierde).
+- 2 jugadores en el mismo móvil.
 - Marcador guardado por modo y dificultad; quien empieza se alterna en cada partida.
-- Tema claro/oscuro automático y vibración al jugar.
-- **Se actualiza sola**: al abrirla comprueba si hay una versión nueva en Releases y la instala.
+
+**Hundir la flota** (2 jugadores en el mismo móvil)
+- Tablero de 10×10 y 5 barcos: portaaviones (5), acorazado (4), crucero (3), submarino (3) y destructor (2).
+- Los barcos no pueden tocarse, ni en diagonal. Se colocan a mano (tocar para poner, tocar el barco para girarlo) o al azar.
+- Si aciertas, vuelves a disparar; si es agua, pasas el móvil. Al hundir un barco se marca el agua de alrededor.
+- Pantalla tapada para pasar el móvil sin ver la flota del otro, partida guardada si se cierra la app, estadísticas y victorias por jugador.
+
+Además: tema claro/oscuro automático, vibración y **actualización automática** desde Releases.
 
 ## Instalar
 
@@ -17,7 +24,7 @@ Descarga `tres-en-raya.apk` de la [última versión](https://github.com/Zeux87/t
 
 Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), que:
 
-1. Pasa las pruebas de la lógica (`node herramientas/pruebas.js`).
+1. Pasa las pruebas de la lógica (`herramientas/pruebas.js` y `herramientas/pruebas-flota.js`).
 2. Compila el APK firmado con `app/tresenraya.jks`, usando el número de compilación como `versionCode`.
 3. Lo publica en Releases como `v<número>`; la app detecta esa versión y se actualiza.
 
@@ -25,7 +32,9 @@ Cada `push` a `main` lanza GitHub Actions (`.github/workflows/compilar.yml`), qu
 
 | Ruta | Qué hay |
 |---|---|
-| `app/src/main/assets/juego.js` | Lógica: ganador, minimax con poda alfa-beta y dificultades |
-| `app/src/main/assets/index.html`, `interfaz.js` | Interfaz del juego |
+| `app/src/main/assets/index.html` | Menú de inicio, versión y botón de actualizar |
+| `app/src/main/assets/comun.css` | Estilos compartidos (colores, botones, modo oscuro) |
+| `app/src/main/assets/tresenraya.html`, `interfaz.js`, `juego.js` | 3 en raya: pantalla, interfaz y lógica (minimax con poda alfa-beta) |
+| `app/src/main/assets/flota.html`, `flota-interfaz.js`, `flota.js` | Hundir la flota: pantalla, interfaz y lógica |
 | `app/src/main/java/es/pablo/tresenraya/` | Actividad Android (WebView), vibración y autoactualización |
-| `herramientas/pruebas.js` | Pruebas; comprueba que el modo Imposible no pierde ninguna partida |
+| `herramientas/` | Pruebas de la lógica de los dos juegos |

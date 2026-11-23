@@ -1,0 +1,152 @@
+/* Estilos compartidos por todas las pantallas */
+:root {
+  --fondo: #f4f1ec;
+  --tarjeta: #ffffff;
+  --texto: #23212b;
+  --suave: #77737f;
+  --rejilla: #d9d3ca;
+  --x: #ef5b5b;
+  --o: #1fa39a;
+  --acento: #4b3fd6;
+  --mar: #dcebf7;
+  --mar-borde: #c3d8ea;
+  --punto: #7f9bb5;
+  --barco: #6f7d99;
+  --tocado: #ef5b5b;
+  --hundido: #9d2f3a;
+  --sombra: 0 6px 20px rgba(40, 30, 20, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #15141b;
+    --tarjeta: #211f29;
+    --texto: #f1eff6;
+    --suave: #9c98a8;
+    --rejilla: #34313f;
+    --x: #ff7070;
+    --o: #3fd0c4;
+    --acento: #8b80ff;
+    --mar: #18263a;
+    --mar-borde: #22344d;
+    --punto: #5f7a98;
+    --barco: #7c88a6;
+    --tocado: #ff6b6b;
+    --hundido: #8a2a36;
+    --sombra: 0 6px 20px rgba(0, 0, 0, .35);
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Roboto", sans-serif;
+  display: flex;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+main {
+  width: 100%;
+  max-width: 440px;
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
+}
+h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  text-align: center;
+}
+.oculto { display: none !important; }
+
+/* Barra superior con "volver al menú" */
+.barra {
+  display: grid;
+  grid-template-columns: 72px 1fr 72px;
+  align-items: center;
+  min-height: 40px;
+}
+.volver {
+  color: var(--acento);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  padding: 8px 0;
+}
+
+/* Selector de opciones */
+.segmentos {
+  display: flex;
+  background: var(--tarjeta);
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: var(--sombra);
+}
+.segmentos button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--suave);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 6px;
+  border-radius: 10px;
+  transition: background .2s, color .2s;
+}
+.segmentos button.activo { background: var(--acento); color: #fff; }
+
+/* Botones */
+.acciones { display: flex; gap: 10px; }
+.boton {
+  flex: 1;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 10px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--acento);
+  color: #fff;
+  box-shadow: var(--sombra);
+  transition: transform .1s, opacity .2s;
+}
+.boton:active { transform: scale(.97); }
+.boton:disabled { opacity: .4; }
+.boton.secundario { background: var(--tarjeta); color: var(--texto); }
+
+.tarjeta {
+  background: var(--tarjeta);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: var(--sombra);
+}
+
+footer {
+  margin-top: auto;
+  text-align: center;
+  font-size: 13px;
+  color: var(--suave);
+  padding-top: 6px;
+}
+footer button {
+  border: 0;
+  background: none;
+  color: var(--acento);
+  font: inherit;
+  font-weight: 600;
+  padding: 6px;
+}
+
+@keyframes dibujar { to { stroke-dashoffset: 0; } }
+@keyframes salto {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.salto { animation: salto .45s ease; }

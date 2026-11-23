@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: node herramientas/pruebas.js
+      - run: node herramientas/pruebas.js && node herramientas/pruebas-flota.js
 
       - uses: actions/setup-java@v4
         with:

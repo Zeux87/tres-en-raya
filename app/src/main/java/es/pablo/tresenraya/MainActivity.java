@@ -14,6 +14,9 @@ import android.webkit.WebViewClient;
 
 public class MainActivity extends Activity {
 
+    private static final String INICIO = "file:///android_asset/index.html";
+    private static final String CARPETA_JUEGOS = "file:///android_asset/";
+
     private WebView web;
     private Actualizador actualizador;
 
@@ -27,20 +30,43 @@ public class MainActivity extends Activity {
         web.setBackgroundColor(0); // transparente: se ve el fondo del tema, sin destello blanco
         WebSettings ajustes = web.getSettings();
         ajustes.setJavaScriptEnabled(true);
-        ajustes.setDomStorageEnabled(true); // para guardar marcador y ajustes
+        ajustes.setDomStorageEnabled(true); // para guardar marcadores, ajustes y partidas
         ajustes.setTextZoom(100);
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView vista, WebResourceRequest peticion) {
-                return true; // el juego no navega a ningún sitio
+                // Solo se navega entre las pantallas del propio juego
+                String url = peticion.getUrl().toString();
+                return !url.startsWith(CARPETA_JUEGOS);
             }
         });
         web.addJavascriptInterface(new Puente(), "Android");
         setContentView(web);
-        web.loadUrl("file:///android_asset/index.html");
+
+        if (estado != null && web.restoreState(estado) != null) {
+            // pantalla recuperada tras cerrar la app en segundo plano
+        } else {
+            web.loadUrl(INICIO);
+        }
 
         // Comprobación silenciosa de versión nueva al abrir
-        actualizador.comprobar(false);
+        if (estado == null) actualizador.comprobar(false);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle salida) {
+        super.onSaveInstanceState(salida);
+        if (web != null) web.saveState(salida);
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Atrás vuelve a la pantalla anterior (p. ej. del juego al menú); en el menú, sale
+        if (web != null && web.canGoBack()) {
+            web.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
@@ -71,7 +97,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    /** Funciones que el juego (JavaScript) puede llamar como Android.xxx() */
+    /** Funciones que los juegos (JavaScript) pueden llamar como Android.xxx() */
     private class Puente {
 
         @JavascriptInterface
