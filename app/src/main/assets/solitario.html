@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Solitario</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --tapete: #2a7a4f;
+    --tapete-hueco: rgba(255, 255, 255, .16);
+    --carta: #fffdf8;
+    --carta-borde: rgba(0, 0, 0, .18);
+    --roja: #d23a3a;
+    --negra: #23212b;
+    --dorso: #3d4fc4;
+    --dorso2: #5468e0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --tapete: #1c5638; --carta: #f2efe8; --dorso: #2e3c99; --dorso2: #3f51b5; }
+  }
+  body { touch-action: none; overscroll-behavior: none; }
+  main { gap: 10px; }
+  .panel { display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: var(--suave); font-size: 14px; padding: 0 2px; }
+  .mesa {
+    position: relative;
+    background: var(--tapete);
+    border-radius: 16px;
+    box-shadow: var(--sombra);
+    padding: 8px;
+    min-height: 420px;
+    overflow: hidden;
+  }
+  .sitio, .carta {
+    position: absolute;
+    border-radius: 7px;
+  }
+  .sitio {
+    border: 2px dashed var(--tapete-hueco);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tapete-hueco);
+    font-size: 22px;
+    font-weight: 800;
+  }
+  .carta {
+    background: var(--carta);
+    border: 1px solid var(--carta-borde);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+    color: var(--negra);
+    transition: left .18s ease, top .18s ease;
+    overflow: hidden;
+  }
+  .carta.roja { color: var(--roja); }
+  .carta .esquina { position: absolute; left: 5%; top: 2%; font-weight: 800; line-height: 1.1; letter-spacing: -.5px; white-space: nowrap; }
+  .carta .centro { position: absolute; right: 6%; bottom: 4%; line-height: 1; }
+  .carta.dorso {
+    background: repeating-linear-gradient(45deg, var(--dorso) 0 5px, var(--dorso2) 5px 10px);
+    border: 3px solid var(--carta);
+  }
+  .carta.arrastrando { transition: none; z-index: 1000 !important; box-shadow: 0 10px 20px rgba(0, 0, 0, .35); }
+  .carta.no { animation: no .3s; }
+  @keyframes no { 25% { margin-left: -5px; } 75% { margin-left: 5px; } }
+  .carta.pista { box-shadow: 0 0 0 3px #f5bd2e, 0 1px 2px rgba(0, 0, 0, .25); }
+  .aviso { text-align: center; font-weight: 700; font-size: 16px; min-height: 22px; }
+  .acciones .boton { font-size: 15px; padding: 12px 6px; }
+  .mesa.ganada .carta { animation: salta .7s ease infinite alternate; }
+  @keyframes salta { to { transform: translateY(-8px) rotate(3deg); } }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Solitario</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="robar">
+    <button data-valor="1">Robar 1</button>
+    <button data-valor="3">Robar 3</button>
+  </div>
+
+  <div class="panel">
+    <span id="movs">0 movimientos</span>
+    <span id="reloj">0:00</span>
+    <span id="ganadas">Ganadas: 0</span>
+  </div>
+
+  <div class="mesa" id="mesa"></div>
+  <div class="aviso" id="aviso"></div>
+
+  <div class="acciones">
+    <button class="boton secundario" id="deshacer">↶ Deshacer</button>
+    <button class="boton secundario" id="pistaBtn">💡 Pista</button>
+    <button class="boton" id="nueva">Nueva</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="solitario.js"></script>
+<script src="solitario-interfaz.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Reversi</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --verde: #2e8b57;
+    --verde-borde: #236b43;
+    --linea: rgba(0, 0, 0, .22);
+    --negra: #23212b;
+    --blanca: #f7f5f0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --verde: #25704a; --verde-borde: #1b5236; --negra: #0d0c12; --blanca: #ecebf2; }
+  }
+  .tablero {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    padding: 6px;
+    background: var(--verde-borde);
+    border-radius: 16px;
+    box-shadow: var(--sombra);
+    touch-action: manipulation;
+  }
+  .casilla {
+    aspect-ratio: 1;
+    background: var(--verde);
+    border-radius: 4px;
+    position: relative;
+  }
+  .ficha {
+    position: absolute;
+    inset: 9%;
+    border-radius: 50%;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25), 0 2px 3px rgba(0, 0, 0, .25);
+    transition: background .25s;
+  }
+  .ficha.N { background: var(--negra); }
+  .ficha.B { background: var(--blanca); }
+  .ficha.gira { animation: gira .35s ease; }
+  .ficha.nueva { animation: aparece .2s ease-out; }
+  @keyframes gira { 0% { transform: scaleX(1); } 50% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+  @keyframes aparece { from { transform: scale(.3); } to { transform: scale(1); } }
+  .casilla.posible::after {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .35);
+  }
+  .casilla.ultima .ficha { outline: 3px solid #f5bd2e; outline-offset: -2px; }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+
+  /* Que el tablero no se encoja si la pantalla es baja */
+  .tablero { flex: none; }
+  .casillero .nombre i { box-shadow: 0 0 0 1.5px var(--suave); }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Reversi</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-valor="movil">Contra el móvil</button>
+    <button data-valor="dos">2 en un móvil</button>
+    <button data-valor="cerca">2 móviles</button>
+  </div>
+
+  <div class="segmentos" id="dificultades">
+    <button data-valor="facil">Fácil</button>
+    <button data-valor="normal">Normal</button>
+    <button data-valor="dificil">Difícil</button>
+  </div>
+
+  <div id="marcador"></div>
+  <div class="estado" id="estado"></div>
+
+  <div class="tablero" id="tablero"></div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="cerca.js"></script>
+<script src="reversi.js"></script>
+<script src="reversi-interfaz.js"></script>
+</body>
+</html>

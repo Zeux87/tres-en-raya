@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Bloques</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --pozo: #26232f;
+    --pozo-linea: #2f2b3a;
+    --p1: #36c5d6; --p2: #f2c53d; --p3: #a259e0; --p4: #4cc36b; --p5: #ec5161; --p6: #3d7ae6; --p7: #f08a32;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --pozo: #0f0e14; --pozo-linea: #1a1822; }
+  }
+  body { touch-action: none; overscroll-behavior: none; }
+  main { gap: 10px; }
+  .juego { display: flex; gap: 10px; align-items: flex-start; justify-content: center; }
+  .pozo { position: relative; }
+  #lienzo { display: block; border-radius: 12px; box-shadow: var(--sombra); background: var(--pozo); }
+  .lado { width: 86px; display: flex; flex-direction: column; gap: 8px; flex: none; }
+  .dato { background: var(--tarjeta); border-radius: 12px; padding: 6px 8px; text-align: center; box-shadow: var(--sombra); }
+  .dato .nombre { font-size: 11px; color: var(--suave); font-weight: 600; }
+  .dato .valor { font-size: 19px; font-weight: 800; line-height: 1.25; }
+  #siguiente { display: block; margin: 2px auto 0; }
+  #pausa { border: 0; border-radius: 12px; background: var(--tarjeta); color: var(--texto); box-shadow: var(--sombra); font-size: 20px; padding: 8px; }
+  .aviso {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; background: rgba(0, 0, 0, .55); border-radius: 12px; color: #fff; text-align: center; padding: 16px;
+  }
+  .aviso .grande { font-size: 24px; font-weight: 800; }
+  .aviso .peque { font-size: 14px; opacity: .9; line-height: 1.4; }
+  .aviso .boton { flex: none; padding: 13px 26px; }
+  .aviso .segmentos { width: 100%; box-shadow: none; }
+  .mando { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .mando button {
+    border: 0; border-radius: 14px; background: var(--tarjeta); color: var(--texto); box-shadow: var(--sombra);
+    font-size: 22px; height: 54px;
+  }
+  .mando button:active { transform: scale(.94); background: var(--acento); color: #fff; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Bloques</h1>
+    <span></span>
+  </div>
+
+  <div class="juego">
+    <div class="pozo" id="pozo">
+      <canvas id="lienzo"></canvas>
+      <div class="aviso" id="aviso">
+        <div class="grande" id="avisoTitulo">Bloques</div>
+        <div class="peque" id="avisoTexto">Completa filas para borrarlas.<br>Toca para girar, arrastra para mover<br>y desliza hacia abajo para soltar.</div>
+        <div class="segmentos" id="niveles">
+          <button data-valor="1">Nivel 1</button>
+          <button data-valor="5">5</button>
+          <button data-valor="9">9</button>
+        </div>
+        <button class="boton" id="avisoBoton">Empezar</button>
+      </div>
+    </div>
+    <div class="lado">
+      <div class="dato"><div class="nombre">Siguiente</div><canvas id="siguiente" width="64" height="44"></canvas></div>
+      <div class="dato"><div class="nombre">Puntos</div><div class="valor" id="puntos">0</div></div>
+      <div class="dato"><div class="nombre">Líneas</div><div class="valor" id="lineas">0</div></div>
+      <div class="dato"><div class="nombre">Nivel</div><div class="valor" id="nivel">1</div></div>
+      <div class="dato"><div class="nombre">Récord</div><div class="valor" id="record">0</div></div>
+      <button id="pausa" aria-label="Pausa">⏸</button>
+    </div>
+  </div>
+
+  <div class="mando" id="mando">
+    <button data-accion="izq" aria-label="Izquierda">◀</button>
+    <button data-accion="girar" aria-label="Girar">⟳</button>
+    <button data-accion="der" aria-label="Derecha">▶</button>
+    <button data-accion="bajar" aria-label="Bajar">▼</button>
+    <button data-accion="caer" aria-label="Soltar">⤓</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="bloques.js"></script>
+<script src="bloques-interfaz.js"></script>
+</body>
+</html>

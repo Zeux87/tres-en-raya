@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Puntos y cajas</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  .hoja {
+    background: var(--tarjeta);
+    border-radius: 18px;
+    box-shadow: var(--sombra);
+    padding: 8px;
+    touch-action: manipulation;
+  }
+  .hoja svg { display: block; width: 100%; height: auto; }
+  .raya { stroke: var(--rejilla); stroke-width: 5; stroke-linecap: round; opacity: .55; }
+  .raya.A { stroke: var(--x); opacity: 1; }
+  .raya.B { stroke: var(--o); opacity: 1; }
+  .raya.nueva { animation: trazo .3s ease-out; }
+  @keyframes trazo { from { stroke-width: 11; } to { stroke-width: 5; } }
+  .caja { fill: transparent; transition: fill .3s; }
+  .caja.A { fill: var(--x); fill-opacity: .25; }
+  .caja.B { fill: var(--o); fill-opacity: .25; }
+  .inicial { font: 800 20px system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+  .inicial.A { fill: var(--x); }
+  .inicial.B { fill: var(--o); }
+  .punto { fill: var(--texto); }
+  .boton.secundario { flex: .8; white-space: nowrap; font-size: 15px; }
+  .ayuda { text-align: center; font-size: 13px; color: var(--suave); margin-top: -6px; }
+
+  /* Que el tablero no se encoja si la pantalla es baja */
+  .hoja { flex: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Puntos y cajas</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="modos">
+    <button data-valor="movil">Contra el móvil</button>
+    <button data-valor="dos">2 en un móvil</button>
+    <button data-valor="cerca">2 móviles</button>
+  </div>
+
+  <div class="segmentos" id="dificultades">
+    <button data-valor="facil">Fácil</button>
+    <button data-valor="normal">Normal</button>
+    <button data-valor="dificil">Difícil</button>
+  </div>
+
+  <div id="marcador"></div>
+  <div class="estado" id="estado"></div>
+
+  <div class="hoja"><svg id="tablero" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="ayuda">Toca entre dos puntos para trazar una raya. Si cierras una caja, vuelves a jugar.</div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+    <button class="boton secundario" id="borrar">Borrar marcador</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="cerca.js"></script>
+<script src="cajas.js"></script>
+<script src="cajas-interfaz.js"></script>
+</body>
+</html>
