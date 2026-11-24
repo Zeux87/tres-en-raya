@@ -64,6 +64,18 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        actualizador.alMostrar();
+    }
+
+    @Override
+    protected void onPause() {
+        actualizador.alOcultar();
+        super.onPause();
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle salida) {
         super.onSaveInstanceState(salida);
         if (web != null) web.saveState(salida);
