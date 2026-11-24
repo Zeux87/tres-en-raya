@@ -41,6 +41,10 @@ final class Actualizador {
     /** Resultado de la instalación que llegó con la app en segundo plano. */
     private static Intent resultadoPendiente;
 
+    private static final String BLOQUEADORES =
+            "\n\nEn Samsung, desactiva un momento «Bloqueador automático» "
+            + "(Ajustes > Seguridad y privacidad). En otros móviles, revisa Play Protect.";
+
     private final Activity act;
     private boolean ocupado;
     /** APK que espera a que el usuario dé permiso para instalar apps. */
@@ -175,7 +179,7 @@ final class Actualizador {
         }
         if (estado == PackageInstaller.STATUS_SUCCESS) return; // la app se reinicia sola
         if (estado == PackageInstaller.STATUS_FAILURE_ABORTED) {
-            aviso("Actualización cancelada");
+            fallo("La instalación se canceló o la bloqueó el móvil." + BLOQUEADORES);
             return;
         }
         String mensaje = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
@@ -190,9 +194,9 @@ final class Actualizador {
         } else if (estado == PackageInstaller.STATUS_FAILURE_STORAGE) {
             texto = "No hay espacio suficiente en el móvil.";
         } else if (estado == PackageInstaller.STATUS_FAILURE_BLOCKED) {
-            texto = "Android ha bloqueado la instalación (Play Protect o permisos).";
+            texto = "Android ha bloqueado la instalación." + BLOQUEADORES;
         } else {
-            texto = "Android no pudo instalarla.";
+            texto = "Android no pudo instalarla." + BLOQUEADORES;
         }
         if (mensaje != null && !mensaje.isEmpty()) texto += "\n\nDetalle: " + mensaje;
         fallo(texto);
