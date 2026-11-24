@@ -201,5 +201,10 @@ public class MainActivity extends Activity {
         public void cercaAjustes() {
             runOnUiThread(() -> cerca.abrirAjustes());
         }
+
+        @JavascriptInterface
+        public void cercaAjustesDe(String que) {
+            runOnUiThread(() -> cerca.abrirAjustesDe(que));
+        }
     }
 }
