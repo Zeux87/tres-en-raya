@@ -13,7 +13,17 @@
   if (typeof datos.record !== 'number') datos.record = 0;
 
   var e = null, fase = 'inicio'; // inicio, jugando, pausa, fin
-  var escala = 1, colores = {}, anterior = 0, cuadro = null, chispas = [];
+  var escala = 1, colores = {}, anterior = 0, cuadro = null, chispas = [], rotulo = null;
+
+  // Cómo se ve cada poder
+  var PODER = {
+    larga: { letra: 'L', nombre: 'Pala larga', color: '#3d7ae6' },
+    laser: { letra: 'D', nombre: '¡Láser!', color: '#ef4b4b' },
+    multi: { letra: 'M', nombre: 'Multibola', color: '#a259e0' },
+    lenta: { letra: 'F', nombre: 'Bola lenta', color: '#2fa36b' },
+    pegajosa: { letra: 'P', nombre: 'Pala pegajosa', color: '#e08a1e' },
+    vida: { letra: '♥', nombre: '¡Vida extra!', color: '#e8457a' }
+  };
 
   var el = {
     lienzo: document.getElementById('lienzo'),
@@ -87,14 +97,66 @@
     });
     ctx.globalAlpha = 1;
     // Pala
-    var w = L.anchoPala(e.nivel);
+    var w = L.anchoPala(e);
+    // Disparos del láser
+    ctx.fillStyle = PODER.laser.color;
+    e.disparos.forEach(function (d) { ctx.fillRect(d.x - 1.5, d.y - 7, 3, 9); });
+    // Cápsulas que caen: pastilla de color con su letra
+    e.capsulas.forEach(function (c) {
+      var x = c.x - L.CAPSULA_ANCHO / 2, y = c.y - L.CAPSULA_ALTO / 2;
+      ctx.fillStyle = PODER[c.tipo].color;
+      redondo(x, y, L.CAPSULA_ANCHO, L.CAPSULA_ALTO, L.CAPSULA_ALTO / 2);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 8px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(PODER[c.tipo].letra, c.x, c.y + 0.5);
+    });
+    // Pala (con cañones si lleva láser y brillo si es pegajosa)
     ctx.fillStyle = colores.pala;
     redondo(e.pala - w / 2, L.PALA_Y, w, L.PALA_ALTO, 5);
-    // Bola
+    if (e.efectos.laser) {
+      ctx.fillStyle = PODER.laser.color;
+      ctx.fillRect(e.pala - w / 2 + 2, L.PALA_Y - 4, 4, 6);
+      ctx.fillRect(e.pala + w / 2 - 6, L.PALA_Y - 4, 4, 6);
+    }
+    if (e.efectos.pegajosa) {
+      ctx.fillStyle = PODER.pegajosa.color;
+      redondo(e.pala - w / 2 + 3, L.PALA_Y, w - 6, 3, 1.5);
+    }
+    // Bolas
     ctx.fillStyle = colores.bola;
-    ctx.beginPath();
-    ctx.arc(e.bola.x, e.bola.y, L.RADIO, 0, Math.PI * 2);
-    ctx.fill();
+    e.bolas.forEach(function (b) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, L.RADIO, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    // Poderes activos arriba a la derecha, con el tiempo que les queda
+    var px = L.ANCHO - 8;
+    Object.keys(e.efectos).forEach(function (k) {
+      var resto = e.efectos[k] / L.DURACION[k];
+      px -= 24;
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = PODER[k].color;
+      redondo(px, 14, 22, 14, 7);
+      ctx.globalAlpha = 1;
+      redondo(px, 14, Math.max(7, 22 * resto), 14, 7);
+      ctx.fillStyle = '#fff';
+      ctx.font = '800 9px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(PODER[k].letra, px + 11, 21.5);
+    });
+    // Nombre del último poder cogido
+    if (rotulo && rotulo.vida > 0) {
+      ctx.globalAlpha = Math.min(1, rotulo.vida / 20);
+      ctx.fillStyle = PODER[rotulo.tipo].color;
+      ctx.font = '800 18px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(PODER[rotulo.tipo].nombre, L.ANCHO / 2, 250 - (60 - rotulo.vida) * 0.4);
+      ctx.globalAlpha = 1;
+    }
   }
 
   function pintarPanel() {
@@ -131,10 +193,18 @@
       }
     }
     chispas = chispas.filter(function (c) { c.x += c.vx; c.y += c.vy; c.vy += 0.15; return --c.vida > 0; });
+    if (rotulo) rotulo.vida -= pasos;
+    s.forEach(function (x) {
+      if (x.indexOf('capsula:') === 0) {
+        rotulo = { tipo: x.slice(8), vida: 60 };
+        P.vibrar(40);
+      }
+    });
     if (s.indexOf('roto') >= 0 || s.indexOf('ladrillo') >= 0) P.vibrar(8);
     if (s.indexOf('nivel') >= 0) {
       P.vibrar(120);
       chispas = [];
+      rotulo = null;
       guardarPartida();
       aviso('¡Nivel ' + e.nivel + '!', 'Toca para lanzar la bola', 'Seguir');
       fase = 'pausa';
@@ -156,7 +226,7 @@
   function guardarPartida() {
     if (e && e.vidas > 0 && (fase === 'jugando' || fase === 'pausa')) {
       var copia = JSON.parse(JSON.stringify(e));
-      L.pegar(copia); // al volver, la bola espera en la pala
+      L.aparcar(copia); // al volver, la bola espera en la pala (los poderes siguen)
       partida.guardar(copia);
     } else {
       partida.borrar();
@@ -218,11 +288,11 @@
     var dx = (ev.clientX - toque.x) / escala;
     // Mueve la pala lo mismo que el dedo (no hace falta tapar la pala con el dedo)
     L.moverPala(e, toque.pala + dx * 1.25);
-    if (e.bola.pegada) dibujar();
+    if (e.bolas.some(function (b) { return b.pegada; })) dibujar();
   });
   document.addEventListener('pointerup', function () {
     // Al soltar el dedo, si la bola espera en la pala, sale
-    if (toque && fase === 'jugando' && e.bola.pegada) L.lanzar(e);
+    if (toque && fase === 'jugando') L.lanzar(e);
     toque = null;
   });
   document.addEventListener('pointercancel', function () { toque = null; });
@@ -248,9 +318,9 @@
   // ---------- Arranque ----------
   leerColores();
   var g = partida.cargar();
-  if (L.valido(g)) {
+  if (L.valido(L.arreglar(g))) {
     e = g;
-    L.pegar(e);
+    L.aparcar(e);
     fase = 'pausa';
     aviso('Partida a medias', e.puntos + ' puntos · nivel ' + e.nivel, 'Seguir');
   } else {
