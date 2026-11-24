@@ -152,6 +152,22 @@ function pareja(juegoA, juegoB, opA, opB) {
   comprobar(q.b.nombre.length <= 14, 'nombre recortado');
 })();
 
+// 4b. Ubicación o Bluetooth apagados, y reintentar repite lo último
+(function () {
+  var p = pareja('flota', 'flota');
+  p.b.buscar('Beto');
+  p.b._evento({ tipo: 'apagado', que: 'ubicacion' });
+  comprobar(p.b.fase === 'apagado' && p.b.apagado === 'ubicacion', 'avisa de la ubicación apagada');
+  p.b.reintentar();
+  comprobar(p.b.fase === 'buscando', 'reintentar vuelve a buscar');
+  p.a.crear('Ana');
+  p.a._evento({ tipo: 'apagado', que: 'bluetooth' });
+  comprobar(p.a.apagado === 'bluetooth', 'avisa del Bluetooth apagado');
+  p.a._evento({ tipo: 'permisos', ajustes: false });
+  p.a.reintentar();
+  comprobar(p.a.fase === 'esperando' && p.a.nombre === 'Ana', 'reintentar vuelve a crear con el mismo nombre');
+})();
+
 // 5. Sin la app de Android no está disponible
 comprobar(Cerca.disponible() === false, 'en Node no hay Nearby');
 

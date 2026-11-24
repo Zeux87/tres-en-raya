@@ -43,7 +43,9 @@
       conectar: function (id) { A.cercaConectar(id); },
       enviar: function (t) { A.cercaEnviar(t); },
       parar: function () { A.cercaParar(); },
-      ajustes: function () { A.cercaAjustes(); }
+      ajustes: function () { A.cercaAjustes(); },
+      // Ajustes del sistema: 'ubicacion' o 'bluetooth' (versiones viejas de la app no lo tienen)
+      ajustesDe: function (que) { if (A.cercaAjustesDe) A.cercaAjustesDe(que); else A.cercaAjustes(); }
     };
   }
 
@@ -64,7 +66,7 @@
     this.op = op;
     this.juego = op.juego;
     this.t = op.transporte || transporteAndroid();
-    this.fase = 'inicio';   // inicio, esperando, buscando, conectando, saludando, conectada, cortada, error, permisos, cerrada
+    this.fase = 'inicio';   // inicio, esperando, buscando, conectando, saludando, conectada, cortada, error, permisos, apagado, cerrada
     this.encontrados = [];  // [{ id, nombre }]
     this.rival = '';
     this.anfitrion = false;
@@ -84,6 +86,7 @@
   };
 
   Sala.prototype.crear = function (nombre) {
+    this.ultima = 'crear';
     this._prepararNombre(nombre);
     this.anfitrion = true;
     this._fase('esperando');
@@ -91,6 +94,7 @@
   };
 
   Sala.prototype.buscar = function (nombre) {
+    this.ultima = 'buscar';
     this._prepararNombre(nombre);
     this.anfitrion = false;
     this.encontrados = [];
@@ -115,6 +119,15 @@
     this.encontrados = [];
     this.error = '';
     this._fase('inicio');
+  };
+
+  // Repite lo último (crear o buscar), p. ej. tras dar permisos o encender la ubicación
+  Sala.prototype.reintentar = function () {
+    this.alVolverReintentar = false;
+    this.error = '';
+    if (!this.ultima) return this.volver();
+    this.t.parar();
+    this[this.ultima](this.nombre);
   };
 
   Sala.prototype.enviar = function (m) {
@@ -177,6 +190,10 @@
       case 'permisos':
         this.permisosAjustes = !!e.ajustes;
         this._fase('permisos');
+        break;
+      case 'apagado':
+        this.apagado = e.que === 'bluetooth' ? 'bluetooth' : 'ubicacion';
+        this._fase('apagado');
         break;
       case 'error':
         if (this.fase === 'conectada') return; // un fallo suelto no corta la partida
@@ -298,20 +315,33 @@
       } else if (f === 'error') {
         caja.appendChild(h('p', { clase: 'cerca-error', texto: sala.error }));
         caja.appendChild(h('div', { clase: 'cerca-botones' }, [
-          boton('Probar otra vez', function () { sala.volver(); }),
+          boton('Probar otra vez', function () { sala.reintentar(); }),
           boton('Cancelar', cancelar, true)
         ]));
         return;
       } else if (f === 'permisos') {
-        caja.appendChild(h('p', { clase: 'cerca-error', texto: 'Para encontrar el otro móvil hace falta el permiso de "Dispositivos cercanos" (o de ubicación en móviles más antiguos).' }));
+        caja.appendChild(h('p', { clase: 'cerca-error', texto: 'Para encontrar el otro móvil, la app necesita los permisos de «Dispositivos cercanos» y «Ubicación».' }));
+        caja.appendChild(h('p', { texto: 'Android usa la ubicación para buscar móviles cercanos por Bluetooth y wifi; la app no guarda ni envía dónde estás.' }));
         var bs = [];
         if (sala.permisosAjustes) {
-          caja.appendChild(h('p', { texto: 'Dalo en Ajustes > Permisos y vuelve aquí.' }));
-          bs.push(boton('Abrir ajustes', function () { sala.t.ajustes(); }));
+          caja.appendChild(h('p', null, ['Toca ', h('b', { texto: 'Abrir ajustes' }), ', entra en ', h('b', { texto: 'Permisos' }), ' y permite ', h('b', { texto: 'Dispositivos cercanos' }), ' y ', h('b', { texto: 'Ubicación' }), ' («Solo mientras se usa la app»). Al volver se intenta solo.']));
+          bs.push(boton('Abrir ajustes', function () { sala.alVolverReintentar = true; sala.t.ajustes(); }));
         }
-        bs.push(boton('Probar otra vez', function () { sala.volver(); }, sala.permisosAjustes));
+        bs.push(boton(sala.permisosAjustes ? 'Ya los he dado: probar otra vez' : 'Dar permisos', function () { sala.reintentar(); }, sala.permisosAjustes));
         bs.push(boton('Cancelar', cancelar, true));
         caja.appendChild(h('div', { clase: 'cerca-botones' }, bs));
+        return;
+      } else if (f === 'apagado') {
+        var bt = sala.apagado === 'bluetooth';
+        caja.appendChild(h('p', { clase: 'cerca-error', texto: bt ? 'El Bluetooth está apagado.' : 'La ubicación del móvil está apagada.' }));
+        caja.appendChild(h('p', { texto: bt
+          ? 'Enciéndelo (en los ajustes rápidos o en Ajustes) para encontrar el otro móvil.'
+          : 'Android necesita la ubicación encendida para buscar móviles cercanos. Enciéndela en los ajustes rápidos o en Ajustes; la app no guarda ni envía dónde estás.' }));
+        caja.appendChild(h('div', { clase: 'cerca-botones' }, [
+          boton(bt ? 'Abrir ajustes de Bluetooth' : 'Abrir ajustes de ubicación', function () { sala.alVolverReintentar = true; sala.t.ajustesDe(sala.apagado); }),
+          boton('Ya está encendida: probar otra vez', function () { sala.reintentar(); }, true),
+          boton('Cancelar', cancelar, true)
+        ]));
         return;
       } else if (f === 'cortada') {
         caja.appendChild(h('p', { clase: 'cerca-error', texto: 'Se ha cortado la conexión con ' + (sala.rival || 'el otro móvil') + '.' }));
@@ -334,6 +364,15 @@
     actual = sala;
     if (raiz.document && raiz.document.body && sala.op.ventana !== false) ventana(sala);
     return sala;
+  }
+
+  // Al volver de los ajustes del sistema, se intenta otra vez solo
+  if (raiz.document && raiz.document.addEventListener) {
+    raiz.document.addEventListener('visibilitychange', function () {
+      var s = actual;
+      if (raiz.document.hidden || !s || !s.alVolverReintentar) return;
+      if (s.fase === 'permisos' || s.fase === 'apagado') s.reintentar();
+    });
   }
 
   // Al salir de la pantalla del juego se corta la conexión

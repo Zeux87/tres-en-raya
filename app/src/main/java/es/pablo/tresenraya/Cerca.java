@@ -91,20 +91,21 @@ class Cerca {
             p.add(Manifest.permission.BLUETOOTH_ADVERTISE);
             p.add(Manifest.permission.BLUETOOTH_CONNECT);
         }
-        if (Build.VERSION.SDK_INT >= 33) {
-            p.add(Manifest.permission.NEARBY_WIFI_DEVICES);
-        } else {
-            // Hasta Android 12 buscar dispositivos cercanos cuenta como ubicación
-            p.add(Manifest.permission.ACCESS_FINE_LOCATION);
-            p.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
+        if (Build.VERSION.SDK_INT >= 33) p.add(Manifest.permission.NEARBY_WIFI_DEVICES);
+        // Nearby también exige la ubicación (al menos la aproximada) en todas las
+        // versiones: sin ella falla con MISSING_PERMISSION_ACCESS_COARSE_LOCATION
+        p.add(Manifest.permission.ACCESS_COARSE_LOCATION);
         return p.toArray(new String[0]);
+    }
+
+    private boolean tiene(String permiso) {
+        return act.checkSelfPermission(permiso) == PackageManager.PERMISSION_GRANTED;
     }
 
     private String[] permisosQueFaltan() {
         List<String> faltan = new ArrayList<>();
         for (String p : permisosNecesarios()) {
-            if (act.checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) faltan.add(p);
+            if (!tiene(p)) faltan.add(p);
         }
         return faltan.toArray(new String[0]);
     }
@@ -124,6 +125,39 @@ class Cerca {
             return;
         }
         empezar(accion);
+    }
+
+    private boolean ubicacionEncendida() {
+        try {
+            if (Build.VERSION.SDK_INT >= 28) {
+                android.location.LocationManager lm = act.getSystemService(android.location.LocationManager.class);
+                return lm == null || lm.isLocationEnabled();
+            }
+            return Settings.Secure.getInt(act.getContentResolver(), Settings.Secure.LOCATION_MODE)
+                    != Settings.Secure.LOCATION_MODE_OFF;
+        } catch (Exception e) {
+            return true; // si no se sabe, se intenta igualmente
+        }
+    }
+
+    private boolean bluetoothEncendido() {
+        try {
+            android.bluetooth.BluetoothManager bm = act.getSystemService(android.bluetooth.BluetoothManager.class);
+            android.bluetooth.BluetoothAdapter a = bm == null ? null : bm.getAdapter();
+            return a == null || a.isEnabled();
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    /** Abre los ajustes del sistema para encender la ubicación ("ubicacion") o el Bluetooth */
+    void abrirAjustesDe(String que) {
+        try {
+            String accion = "bluetooth".equals(que) ? Settings.ACTION_BLUETOOTH_SETTINGS : Settings.ACTION_LOCATION_SOURCE_SETTINGS;
+            act.startActivity(new Intent(accion));
+        } catch (Exception ignorada) {
+            // nada
+        }
     }
 
     /** Abre los ajustes de la app para dar los permisos a mano */
@@ -158,13 +192,25 @@ class Cerca {
         String[] faltan = permisosQueFaltan();
         if (faltan.length > 0) {
             pendiente = accion;
-            act.requestPermissions(faltan, PETICION_PERMISOS);
+            // Se pide también la ubicación precisa (si la deniega y deja la aproximada, sirve igual)
+            List<String> pedir = new ArrayList<>(java.util.Arrays.asList(faltan));
+            if (!tiene(Manifest.permission.ACCESS_FINE_LOCATION)) pedir.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            act.requestPermissions(pedir.toArray(new String[0]), PETICION_PERMISOS);
             return;
         }
         empezar(accion);
     }
 
     private void empezar(String accion) {
+        // Con la ubicación o el Bluetooth apagados Nearby no encuentra al otro móvil
+        if (!ubicacionEncendida()) {
+            avisar(evento("apagado").put2("que", "ubicacion"));
+            return;
+        }
+        if (!bluetoothEncendido()) {
+            avisar(evento("apagado").put2("que", "bluetooth"));
+            return;
+        }
         if ("anunciar".equals(accion)) {
             AdvertisingOptions op = new AdvertisingOptions.Builder().setStrategy(ESTRATEGIA).build();
             cliente().startAdvertising(nombre, servicio, conexion, op)
@@ -286,8 +332,11 @@ class Cerca {
             return; // ya estaba en marcha: no es un error
         }
         String detalle;
-        if (codigo == ConnectionsStatusCodes.MISSING_PERMISSION_ACCESS_COARSE_LOCATION) {
-            detalle = "Falta el permiso de ubicación.";
+        if (codigo == ConnectionsStatusCodes.MISSING_PERMISSION_ACCESS_COARSE_LOCATION
+                || (codigo >= 8030 && codigo <= 8039)) { // 803x: MISSING_PERMISSION_...
+            // Falta un permiso: la ventana explica cuál y lleva a Ajustes
+            avisar(evento("permisos").put2("ajustes", true));
+            return;
         } else if (codigo == ConnectionsStatusCodes.STATUS_RADIO_ERROR) {
             detalle = "Revisa que el Bluetooth y el wifi estén encendidos.";
         } else if (codigo == ConnectionsStatusCodes.STATUS_ENDPOINT_UNKNOWN) {
