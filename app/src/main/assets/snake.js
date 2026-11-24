@@ -1,5 +1,5 @@
 // Lógica de Snake: la serpiente avanza una casilla en cada paso, crece al comer
-// y muere si choca con la pared o consigo misma.
+// y muere si choca consigo misma. No hay paredes: si sale por un lado, entra por el contrario.
 // Estado (se puede guardar con JSON):
 //   { cols, filas, cuerpo: [casillas, la cabeza primero], dir, cola: [giros pendientes],
 //     comida, puntos, vivo, lleno }
@@ -53,12 +53,9 @@
     if (!e.vivo) return 'muere';
     if (e.cola.length) e.dir = e.cola.shift();
     var cabeza = e.cuerpo[0];
-    var f = Math.floor(cabeza / e.cols) + MOV[e.dir][0];
-    var c = cabeza % e.cols + MOV[e.dir][1];
-    if (f < 0 || f >= e.filas || c < 0 || c >= e.cols) {
-      e.vivo = false;
-      return 'muere';
-    }
+    // Sin bordes: al salir por arriba entra por abajo, y al salir por un lado entra por el otro
+    var f = (Math.floor(cabeza / e.cols) + MOV[e.dir][0] + e.filas) % e.filas;
+    var c = (cabeza % e.cols + MOV[e.dir][1] + e.cols) % e.cols;
     var nueva = f * e.cols + c;
     var come = nueva === e.comida;
     // La cola se mueve a la vez, así que se puede entrar en la casilla que deja (si no come)

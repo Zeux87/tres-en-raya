@@ -134,7 +134,8 @@
     // Poderes activos arriba a la derecha, con el tiempo que les queda
     var px = L.ANCHO - 8;
     Object.keys(e.efectos).forEach(function (k) {
-      var resto = e.efectos[k] / L.DURACION[k];
+      var resto = Math.min(1, e.efectos[k] / L.DURACION[k]);
+      var veces = L.nivelDe(e, k);
       px -= 24;
       ctx.globalAlpha = 0.35;
       ctx.fillStyle = PODER[k].color;
@@ -145,7 +146,7 @@
       ctx.font = '800 9px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(PODER[k].letra, px + 11, 21.5);
+      ctx.fillText(PODER[k].letra + (veces > 1 ? veces : ''), px + 11, 21.5);
     });
     // Nombre del último poder cogido
     if (rotulo && rotulo.vida > 0) {
@@ -154,7 +155,7 @@
       ctx.font = '800 18px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(PODER[rotulo.tipo].nombre, L.ANCHO / 2, 250 - (60 - rotulo.vida) * 0.4);
+      ctx.fillText(PODER[rotulo.tipo].nombre + (rotulo.veces > 1 ? ' x' + rotulo.veces : ''), L.ANCHO / 2, 250 - (60 - rotulo.vida) * 0.4);
       ctx.globalAlpha = 1;
     }
   }
@@ -196,7 +197,7 @@
     if (rotulo) rotulo.vida -= pasos;
     s.forEach(function (x) {
       if (x.indexOf('capsula:') === 0) {
-        rotulo = { tipo: x.slice(8), vida: 60 };
+        rotulo = { tipo: x.slice(8), vida: 60, veces: L.nivelDe(e, x.slice(8)) };
         P.vibrar(40);
       }
     });

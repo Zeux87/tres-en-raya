@@ -30,6 +30,7 @@ App Android con diecisiete juegos:
 
 **Snake**
 - Tres velocidades, que aumentan un poco según comes. Se gira deslizando el dedo o con las flechas.
+- Sin bordes: si sales por arriba entras por abajo, y si sales por un lado entras por el otro.
 - Récord por velocidad; se pone en pausa y se guarda si sales de la app.
 
 **2048**
@@ -77,7 +78,8 @@ App Android con diecisiete juegos:
   cada vez más rápido; los grises aguantan dos golpes. Récord y partida guardada en pausa.
 - Poderes: al romper un ladrillo a veces cae una cápsula. Si la coges con la pala: L pala larga, D láser
   (la pala dispara sola), M multibola, F bola lenta, P pala pegajosa (la bola se queda pegada hasta que tocas)
-  y ♥ vida extra. Duran unos segundos y se pierden al perder una vida.
+  y ♥ vida extra. Duran unos segundos y se pierden al perder una vida. Se suman: puedes tener
+  varios a la vez, y coger otra vez el mismo alarga su tiempo y lo refuerza (hasta x3).
 
 **Solitario** (Klondike)
 - Robando de 1 en 1 o de 3 en 3. Toca una carta para mandarla a su mejor sitio o arrástrala a donde quieras.
