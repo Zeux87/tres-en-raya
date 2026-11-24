@@ -5,7 +5,9 @@ import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageInstaller;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -18,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -29,8 +32,19 @@ final class Actualizador {
     private static final String API =
             "https://api.github.com/repos/Zeux87/tres-en-raya/releases/latest";
 
+    /** Página de la última versión, para instalarla a mano si la automática falla. */
+    static final String WEB =
+            "https://github.com/Zeux87/tres-en-raya/releases/latest";
+
+    /** El actualizador de la pantalla que está a la vista (para ReceptorInstalacion). */
+    private static WeakReference<Actualizador> visible = new WeakReference<>(null);
+    /** Resultado de la instalación que llegó con la app en segundo plano. */
+    private static Intent resultadoPendiente;
+
     private final Activity act;
     private boolean ocupado;
+    /** APK que espera a que el usuario dé permiso para instalar apps. */
+    private String urlEsperandoPermiso;
 
     Actualizador(Activity act) {
         this.act = act;
@@ -94,10 +108,145 @@ final class Actualizador {
         new AlertDialog.Builder(act)
                 .setTitle("Nueva versión disponible")
                 .setMessage(mensaje)
-                .setPositiveButton("Actualizar", (d, w) -> descargar(urlApk))
+                .setPositiveButton("Actualizar", (d, w) -> actualizar(urlApk))
                 .setNegativeButton("Más tarde", null)
+                .setNeutralButton("Desde la web", (d, w) -> abrirWeb())
                 .show();
     }
+
+    // ---------- Ciclo de vida (lo llama MainActivity) ----------
+
+    void alMostrar() {
+        visible = new WeakReference<>(this);
+        if (resultadoPendiente != null) {
+            Intent r = resultadoPendiente;
+            resultadoPendiente = null;
+            resultado(r);
+        }
+        if (urlEsperandoPermiso != null && puedeInstalar()) {
+            String url = urlEsperandoPermiso;
+            urlEsperandoPermiso = null;
+            descargar(url);
+        }
+    }
+
+    void alOcultar() {
+        if (visible.get() == this) visible.clear();
+    }
+
+    /** Llega desde ReceptorInstalacion con el resultado de Android. */
+    static void resultadoRecibido(android.content.Context contexto, Intent intent) {
+        Actualizador a = visible.get();
+        if (a != null && !a.act.isFinishing()) {
+            a.resultado(intent);
+            return;
+        }
+        // La app no está a la vista: se enseña al volver a ella
+        resultadoPendiente = intent;
+        if (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -99) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            Intent confirmar = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+            if (confirmar != null) {
+                try {
+                    confirmar.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    contexto.startActivity(confirmar);
+                    resultadoPendiente = null;
+                } catch (Exception ignorada) {
+                    // Android no deja abrirla desde segundo plano: se hará al volver
+                }
+            }
+        }
+    }
+
+    private void resultado(Intent intent) {
+        int estado = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+        if (estado == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+            // Android pide confirmación: abrimos su pantalla de "¿Instalar?" desde la app visible
+            Intent confirmar = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+            if (confirmar == null) {
+                fallo("Android no mostró la pantalla de instalación.");
+                return;
+            }
+            try {
+                act.startActivity(confirmar);
+            } catch (Exception e) {
+                fallo("No se pudo abrir la pantalla de instalación (" + e.getMessage() + ").");
+            }
+            return;
+        }
+        if (estado == PackageInstaller.STATUS_SUCCESS) return; // la app se reinicia sola
+        if (estado == PackageInstaller.STATUS_FAILURE_ABORTED) {
+            aviso("Actualización cancelada");
+            return;
+        }
+        String mensaje = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+        String texto;
+        if (estado == PackageInstaller.STATUS_FAILURE_CONFLICT
+                || estado == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE
+                || (mensaje != null && mensaje.contains("UPDATE_INCOMPATIBLE"))) {
+            texto = "La versión nueva está firmada con otra clave que la que tienes instalada, "
+                    + "así que Android no deja instalarla encima.\n\n"
+                    + "Desinstala la app y vuelve a instalarla desde la web "
+                    + "(se pierden los marcadores guardados).";
+        } else if (estado == PackageInstaller.STATUS_FAILURE_STORAGE) {
+            texto = "No hay espacio suficiente en el móvil.";
+        } else if (estado == PackageInstaller.STATUS_FAILURE_BLOCKED) {
+            texto = "Android ha bloqueado la instalación (Play Protect o permisos).";
+        } else {
+            texto = "Android no pudo instalarla.";
+        }
+        if (mensaje != null && !mensaje.isEmpty()) texto += "\n\nDetalle: " + mensaje;
+        fallo(texto);
+    }
+
+    /** Explica el fallo y ofrece instalar a mano desde la web. */
+    private void fallo(String texto) {
+        if (act.isFinishing() || act.isDestroyed()) return;
+        new AlertDialog.Builder(act)
+                .setTitle("No se pudo actualizar")
+                .setMessage(texto + "\n\nPuedes descargarla desde la web e instalarla a mano.")
+                .setPositiveButton("Abrir la web", (d, w) -> abrirWeb())
+                .setNegativeButton("Cerrar", null)
+                .show();
+    }
+
+    private void abrirWeb() {
+        try {
+            act.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(WEB)));
+        } catch (Exception e) {
+            aviso("Abre en el navegador: " + WEB);
+        }
+    }
+
+    // ---------- Permiso de "instalar apps desconocidas" ----------
+
+    private boolean puedeInstalar() {
+        return Build.VERSION.SDK_INT < 26 || act.getPackageManager().canRequestPackageInstalls();
+    }
+
+    private void actualizar(final String urlApk) {
+        if (puedeInstalar()) {
+            descargar(urlApk);
+            return;
+        }
+        new AlertDialog.Builder(act)
+                .setTitle("Falta un permiso")
+                .setMessage("Para actualizarse, Android tiene que dejar que Juegos instale apps.\n\n"
+                        + "En la pantalla que se abre, activa «Permitir de esta fuente» y vuelve atrás.")
+                .setPositiveButton("Abrir ajustes", (d, w) -> {
+                    urlEsperandoPermiso = urlApk;
+                    try {
+                        act.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                Uri.parse("package:" + act.getPackageName())));
+                    } catch (Exception e) {
+                        urlEsperandoPermiso = null;
+                        fallo("No se pudieron abrir los ajustes.");
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    // ---------- Descarga e instalación ----------
 
     private void descargar(final String urlApk) {
         final ProgressBar barra = new ProgressBar(act, null, android.R.attr.progressBarStyleHorizontal);
@@ -162,7 +311,7 @@ final class Actualizador {
                 } catch (final Exception e) {
                     act.runOnUiThread(() -> {
                         cerrar(dialogo);
-                        aviso("Error al descargar: " + e.getMessage());
+                        fallo("Error al descargar: " + e.getMessage());
                     });
                 } finally {
                     if (con != null) con.disconnect();
