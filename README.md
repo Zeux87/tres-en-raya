@@ -75,6 +75,9 @@ App Android con diecisiete juegos:
 **Rompeladrillos**
 - Arrastra el dedo para mover la pala y toca para lanzar la bola. 3 vidas y 5 dibujos de ladrillos que se repiten
   cada vez más rápido; los grises aguantan dos golpes. Récord y partida guardada en pausa.
+- Poderes: al romper un ladrillo a veces cae una cápsula. Si la coges con la pala: L pala larga, D láser
+  (la pala dispara sola), M multibola, F bola lenta, P pala pegajosa (la bola se queda pegada hasta que tocas)
+  y ♥ vida extra. Duran unos segundos y se pierden al perder una vida.
 
 **Solitario** (Klondike)
 - Robando de 1 en 1 o de 3 en 3. Toca una carta para mandarla a su mejor sitio o arrástrala a donde quieras.
