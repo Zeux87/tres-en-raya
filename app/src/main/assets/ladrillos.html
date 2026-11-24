@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Rompeladrillos</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --campo: #1e1b2b;
+    --pala: #f1eff6;
+    --bola: #ffd25e;
+    --f0: #ef5b5b; --f1: #f08a32; --f2: #f2c53d; --f3: #4cc36b; --f4: #36c5d6; --f5: #3d7ae6; --f6: #a259e0;
+    --duro: #b9b4c6;
+  }
+  @media (prefers-color-scheme: dark) { :root { --campo: #0f0e14; } }
+  body { touch-action: none; overscroll-behavior: none; }
+  .panel { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; }
+  .dato { background: var(--tarjeta); border-radius: 12px; padding: 6px 8px; text-align: center; box-shadow: var(--sombra); }
+  .dato .nombre { font-size: 11px; color: var(--suave); font-weight: 600; }
+  .dato .valor { font-size: 20px; font-weight: 800; line-height: 1.25; }
+  #pausa { border: 0; border-radius: 12px; background: var(--tarjeta); color: var(--texto); box-shadow: var(--sombra); font-size: 20px; width: 52px; }
+  .campo { position: relative; display: flex; justify-content: center; }
+  canvas { display: block; border-radius: 14px; box-shadow: var(--sombra); background: var(--campo); }
+  .aviso {
+    position: absolute; inset: 0; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; background: rgba(0, 0, 0, .5); border-radius: 14px; color: #fff; text-align: center; padding: 20px;
+  }
+  .aviso .grande { font-size: 25px; font-weight: 800; }
+  .aviso .peque { font-size: 15px; opacity: .9; line-height: 1.4; }
+  .aviso .boton { flex: none; padding: 14px 28px; }
+  #ayuda { text-align: center; font-size: 13px; color: var(--suave); margin-top: -4px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Rompeladrillos</h1>
+    <span></span>
+  </div>
+
+  <div class="panel">
+    <div class="dato"><div class="nombre">Puntos</div><div class="valor" id="puntos">0</div></div>
+    <div class="dato"><div class="nombre">Nivel</div><div class="valor" id="nivel">1</div></div>
+    <div class="dato"><div class="nombre">Récord</div><div class="valor" id="record">0</div></div>
+    <button id="pausa" aria-label="Pausa">⏸</button>
+  </div>
+
+  <div class="campo" id="campo">
+    <canvas id="lienzo"></canvas>
+    <div class="aviso" id="aviso">
+      <div class="grande" id="avisoTitulo">Rompeladrillos</div>
+      <div class="peque" id="avisoTexto">Arrastra el dedo para mover la pala.<br>Toca para lanzar la bola.</div>
+      <button class="boton" id="avisoBoton">Empezar</button>
+    </div>
+  </div>
+  <div id="ayuda">Arrastra en cualquier parte del campo · toca para lanzar</div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="ladrillos.js"></script>
+<script src="ladrillos-interfaz.js"></script>
+</body>
+</html>

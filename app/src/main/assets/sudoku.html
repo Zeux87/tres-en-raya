@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Sudoku</title>
+<link rel="stylesheet" href="comun.css">
+<style>
+  :root {
+    --linea-fina: #e2ddd5;
+    --linea-gruesa: #8f8899;
+    --dado: #23212b;
+    --mio: #4b3fd6;
+    --zona: #f1eefb;
+    --igual: #dcd6ff;
+    --elegida: #c3baff;
+    --mal: #e0433f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --linea-fina: #34313f;
+      --linea-gruesa: #8a8499;
+      --dado: #f1eff6;
+      --mio: #a69dff;
+      --zona: #2a2735;
+      --igual: #3b3560;
+      --elegida: #514690;
+      --mal: #ff7070;
+    }
+  }
+  .panel { display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: var(--suave); font-size: 15px; padding: 0 4px; }
+  .rejilla {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    background: var(--tarjeta);
+    border: 2.5px solid var(--linea-gruesa);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--sombra);
+    touch-action: manipulation;
+  }
+  .celda {
+    aspect-ratio: 1;
+    border-right: 1px solid var(--linea-fina);
+    border-bottom: 1px solid var(--linea-fina);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 23px;
+    font-weight: 600;
+    color: var(--mio);
+    position: relative;
+  }
+  .celda:nth-child(9n) { border-right: 0; }
+  .celda:nth-child(9n+3), .celda:nth-child(9n+6) { border-right: 2px solid var(--linea-gruesa); }
+  .celda:nth-child(n+19):nth-child(-n+27), .celda:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--linea-gruesa); }
+  .celda:nth-child(n+73) { border-bottom: 0; }
+  .celda.dada { color: var(--dado); font-weight: 800; }
+  .celda.zona { background: var(--zona); }
+  .celda.igual { background: var(--igual); }
+  .celda.elegida { background: var(--elegida); }
+  .celda.mal { color: var(--mal); }
+  .notas { position: absolute; inset: 1px; display: grid; grid-template-columns: repeat(3, 1fr); font-size: 9.5px; font-weight: 600; color: var(--suave); }
+  .notas span { display: flex; align-items: center; justify-content: center; }
+  .teclado { display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; }
+  .teclado button {
+    border: 0;
+    border-radius: 12px;
+    background: var(--tarjeta);
+    color: var(--mio);
+    box-shadow: var(--sombra);
+    font: inherit;
+    font-size: 24px;
+    font-weight: 700;
+    padding: 10px 0 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .teclado button small { font-size: 10px; color: var(--suave); font-weight: 600; }
+  .teclado button:disabled { opacity: .25; }
+  .teclado button:active { transform: scale(.94); }
+  .herramientas { display: flex; gap: 8px; }
+  .herramientas button {
+    flex: 1;
+    border: 0;
+    background: var(--tarjeta);
+    color: var(--texto);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 9px 4px;
+  }
+  .herramientas button span { display: block; font-size: 20px; }
+  .herramientas button.activo { background: var(--acento); color: #fff; }
+  .rejilla.ganada .celda { animation: ola .6s ease both; }
+  @keyframes ola { 50% { transform: scale(.85); } }
+
+  /* Que el tablero no se encoja si la pantalla es baja */
+  .rejilla { flex: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="barra">
+    <a class="volver" href="index.html">‹ Menú</a>
+    <h1>Sudoku</h1>
+    <span></span>
+  </div>
+
+  <div class="segmentos" id="niveles">
+    <button data-valor="facil">Fácil</button>
+    <button data-valor="normal">Normal</button>
+    <button data-valor="dificil">Difícil</button>
+  </div>
+
+  <div class="panel">
+    <span id="errores">Errores: 0</span>
+    <span id="reloj">0:00</span>
+    <span id="record">Récord: –</span>
+  </div>
+
+  <div class="estado oculto" id="estado"></div>
+  <div class="rejilla" id="rejilla"></div>
+
+  <div class="herramientas">
+    <button id="deshacer"><span>↶</span>Deshacer</button>
+    <button id="borrarCelda"><span>⌫</span>Borrar</button>
+    <button id="notas"><span>✎</span>Notas</button>
+    <button id="pista"><span>💡</span>Pista</button>
+  </div>
+  <div class="teclado" id="teclado"></div>
+
+  <div class="acciones">
+    <button class="boton" id="nueva">Nueva partida</button>
+  </div>
+</main>
+
+<script src="plataforma.js"></script>
+<script src="sudoku.js"></script>
+<script src="sudoku-interfaz.js"></script>
+</body>
+</html>
