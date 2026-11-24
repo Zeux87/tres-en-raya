@@ -33,12 +33,29 @@ comprobar(S.paso(a) === 'nada' && a.cuerpo[0] === cabeza + 1 && a.cuerpo.length 
 comprobar(S.paso(a) === 'come' && a.cuerpo.length === 4 && a.puntos === 1, 'come y crece');
 comprobar(a.cuerpo.indexOf(a.comida) < 0, 'nueva comida libre');
 
-// Chocar con la pared
+// Sin bordes: sale por la derecha y entra por la izquierda, y lo mismo arriba y abajo
 var p = S.nuevo(10, 10, semilla(3));
-p.comida = 0;
-var r;
-for (var k = 0; k < 20 && p.vivo; k++) r = S.paso(p);
-comprobar(r === 'muere' && !p.vivo && k === 6, 'choca con la pared derecha (' + k + ' pasos)');
+p.comida = 99;
+p.cuerpo = [59, 58, 57]; // fila 5, cabeza en la última columna mirando a la derecha
+comprobar(S.paso(p) === 'nada' && p.vivo && p.cuerpo[0] === 50, 'sale por la derecha y entra por la izquierda');
+p.cuerpo = [50, 51, 52]; p.dir = 'izq'; p.cola = [];
+comprobar(S.paso(p) === 'nada' && p.cuerpo[0] === 59, 'sale por la izquierda y entra por la derecha');
+p.cuerpo = [5, 15, 25]; p.dir = 'arriba'; p.cola = [];
+comprobar(S.paso(p) === 'nada' && p.cuerpo[0] === 95, 'sale por arriba y entra por abajo');
+p.cuerpo = [95, 85, 75]; p.dir = 'abajo'; p.cola = [];
+comprobar(S.paso(p) === 'nada' && p.cuerpo[0] === 5, 'sale por abajo y entra por arriba');
+// Dando vueltas en línea recta nunca muere
+var v = S.nuevo(10, 10, semilla(3));
+v.comida = 99;
+for (var k = 0; k < 100; k++) S.paso(v);
+comprobar(v.vivo, 'en línea recta da la vuelta al campo sin morir');
+// Cruzar el borde hasta su propio cuerpo sí mata
+var b = S.nuevo(10, 10, semilla(3));
+b.comida = 99;
+b.cuerpo = [9, 0, 1, 2, 3]; // la cabeza en la columna 9, el cuerpo al otro lado
+b.dir = 'der';
+// la siguiente casilla (0) la ocupa el cuerpo, que no es la cola
+comprobar(S.paso(b) === 'muere', 'al cruzar el borde choca con su cuerpo');
 
 // Chocar consigo misma: serpiente larga que gira en cuadrado
 var m = S.nuevo(10, 10, semilla(4));

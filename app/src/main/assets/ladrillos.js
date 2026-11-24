@@ -8,6 +8,8 @@
 //   lenta    las bolas van más despacio un rato
 //   pegajosa la bola se queda pegada a la pala; toca para lanzarla
 //   vida     una vida más
+// Los poderes se suman: se pueden tener varios a la vez, y coger otra vez el mismo alarga su tiempo
+// y lo refuerza (pala aún más larga, láser más rápido, bola aún más lenta), hasta 3 veces.
 // Al perder una vida o pasar de nivel se acaban los poderes.
 (function (raiz, crear) {
   var L = crear();
@@ -30,6 +32,8 @@
   var PESOS = { larga: 5, laser: 4, multi: 4, lenta: 4, pegajosa: 3, vida: 1 };
   var PODERES = Object.keys(PESOS);
   var LENTA = 0.62;
+  var MAX_NIVEL = 3;                           // veces que se suma un mismo poder
+  var LENTAS = [1, 0.62, 0.5, 0.42];           // rapidez de la bola según cuántas "lenta" lleva
 
   // Dibujos de los niveles: cada letra es una fila de 8. '.' vacío, '1' normal, '2' duro (2 golpes)
   var NIVELES = [
@@ -43,10 +47,17 @@
   function anchoBase(nivel) { return Math.max(40, 60 - (nivel - 1) * 3); }
   function anchoPala(e) {
     if (typeof e === 'number') return anchoBase(e);
-    return Math.round(anchoBase(e.nivel) * (e.efectos && e.efectos.larga ? 1.55 : 1));
+    var n = e.efectos && e.efectos.larga ? nivelDe(e, 'larga') : 0;
+    return Math.round(Math.min(ANCHO * 0.6, anchoBase(e.nivel) * (1 + 0.45 * n)));
   }
   function rapidez(nivel) { return Math.min(7.2, 4.2 + (nivel - 1) * 0.45); } // unidades por paso de 16 ms
-  function rapidezActual(e) { return rapidez(e.nivel) * (e.efectos.lenta ? LENTA : 1); }
+  // Cuántas veces se ha sumado un poder activo (1 a 3)
+  function nivelDe(e, tipo) {
+    if (!e.efectos || !e.efectos[tipo]) return 0;
+    var n = e.niveles && e.niveles[tipo];
+    return n >= 1 ? Math.min(MAX_NIVEL, n) : 1;
+  }
+  function rapidezActual(e) { return rapidez(e.nivel) * LENTAS[nivelDe(e, 'lenta')]; }
 
   function cargarNivel(e) {
     var dibujo = NIVELES[(e.nivel - 1) % NIVELES.length];
@@ -67,6 +78,7 @@
     e.capsulas = [];
     e.disparos = [];
     e.efectos = {};
+    e.niveles = {};
     e.recarga = 0;
   }
 
@@ -161,9 +173,12 @@
         e.bolas.push({ x: base.x, y: Math.min(base.y, PALA_Y - RADIO - 1), vx: v * Math.sin(a), vy: vy, pegada: false, dx: 0 });
       });
     } else {
-      var antes = !!e.efectos[tipo];
-      e.efectos[tipo] = DURACION[tipo];
-      if (tipo === 'lenta' && !antes) ajustarRapidez(e);
+      // Se suma: más tiempo (hasta 3 veces la duración) y más fuerza (hasta 3 niveles)
+      if (!e.niveles) e.niveles = {};
+      var n = nivelDe(e, tipo);
+      e.efectos[tipo] = Math.min(MAX_NIVEL * DURACION[tipo], (e.efectos[tipo] || 0) + DURACION[tipo]);
+      e.niveles[tipo] = Math.min(MAX_NIVEL, n + 1);
+      if (tipo === 'lenta') ajustarRapidez(e);
       if (tipo === 'larga') moverPala(e, e.pala);
     }
   }
@@ -173,6 +188,7 @@
       e.efectos[k] -= pasos;
       if (e.efectos[k] <= 0) {
         delete e.efectos[k];
+        if (e.niveles) delete e.niveles[k];
         if (k === 'lenta') ajustarRapidez(e);
         if (k === 'larga') moverPala(e, e.pala);
         if (k === 'pegajosa') lanzar(e);
@@ -197,7 +213,7 @@
       if (e.recarga <= 0) {
         var m = anchoPala(e) / 2 - 4;
         e.disparos.push({ x: e.pala - m, y: PALA_Y - 2 }, { x: e.pala + m, y: PALA_Y - 2 });
-        e.recarga = CADENCIA;
+        e.recarga = Math.round(CADENCIA / nivelDe(e, 'laser')); // más rápido si se ha sumado
         sucesos.push('disparo');
       }
     }
@@ -317,6 +333,7 @@
     if (!Array.isArray(e.disparos)) e.disparos = [];
     if (!e.efectos || typeof e.efectos !== 'object') e.efectos = {};
     if (typeof e.recarga !== 'number') e.recarga = 0;
+    if (!e.niveles || typeof e.niveles !== 'object') e.niveles = {};
     return e;
   }
 
@@ -329,7 +346,7 @@
   return {
     ANCHO: ANCHO, ALTO: ALTO, COLS: COLS, PALA_Y: PALA_Y, PALA_ALTO: PALA_ALTO, RADIO: RADIO, VIDAS: VIDAS,
     MAX_VIDAS: MAX_VIDAS, MAX_BOLAS: MAX_BOLAS, NIVELES: NIVELES, PODERES: PODERES, DURACION: DURACION,
-    CAPSULA_ANCHO: CAPSULA_ANCHO, CAPSULA_ALTO: CAPSULA_ALTO, LENTA: LENTA,
+    CAPSULA_ANCHO: CAPSULA_ANCHO, CAPSULA_ALTO: CAPSULA_ALTO, LENTA: LENTA, LENTAS: LENTAS, MAX_NIVEL: MAX_NIVEL, nivelDe: nivelDe,
     nuevo: nuevo, lanzar: lanzar, moverPala: moverPala, avanzar: avanzar, rectLadrillo: rectLadrillo,
     quedan: quedan, anchoPala: anchoPala, rapidez: rapidez, rapidezActual: rapidezActual, pegar: pegar, aparcar: aparcar,
     activar: activar, arreglar: arreglar, valido: valido

@@ -202,6 +202,34 @@ var vieja = { nivel: 2, vidas: 2, puntos: 300, pala: 150, ladrillos: [1, 1, 0], 
 var arreglada = L.arreglar(JSON.parse(JSON.stringify(vieja)));
 comprobar(L.valido(arreglada) && arreglada.bolas.length === 1 && !arreglada.bola, 'partida vieja recuperada');
 
+// 18b. Los poderes se suman: varios a la vez, y repetir uno lo alarga y lo refuerza
+var su = coger('larga').e;
+var ancho1 = L.anchoPala(su), tiempo1 = su.efectos.larga;
+L.activar(su, 'lenta'); L.activar(su, 'laser');
+comprobar(su.efectos.larga && su.efectos.lenta && su.efectos.laser, 'se pueden tener varios poderes a la vez');
+L.activar(su, 'larga');
+comprobar(su.efectos.larga > tiempo1, 'repetir la pala larga alarga su tiempo');
+comprobar(L.anchoPala(su) > ancho1 && L.nivelDe(su, 'larga') === 2, 'y la pala crece aún más');
+L.activar(su, 'larga'); L.activar(su, 'larga'); L.activar(su, 'larga');
+comprobar(L.nivelDe(su, 'larga') === L.MAX_NIVEL && su.efectos.larga <= L.MAX_NIVEL * L.DURACION.larga, 'se suma hasta un máximo');
+comprobar(L.anchoPala(su) <= L.ANCHO * 0.6 && su.pala - L.anchoPala(su) / 2 >= 0 && su.pala + L.anchoPala(su) / 2 <= L.ANCHO, 'la pala máxima cabe en el campo');
+var le = coger('lenta').e;
+var r1 = Math.hypot(le.bolas[0].vx, le.bolas[0].vy);
+L.activar(le, 'lenta');
+var r2 = Math.hypot(le.bolas[0].vx, le.bolas[0].vy);
+comprobar(r2 < r1 - 0.01, 'dos bolas lentas van aún más despacio');
+for (var p2 = 0; p2 < 2 * L.DURACION.lenta + 5; p2++) { le.bolas = [bola(150, 200, 0, -L.rapidezActual(le))]; L.avanzar(le, 1, nunca); }
+comprobar(!le.efectos.lenta && !le.niveles.lenta && Math.abs(L.rapidezActual(le) - L.rapidez(le.nivel)) < 1e-9, 'al acabar, vuelve a la rapidez normal');
+var la = coger('laser').e;
+var cuenta = function (x) { var n = 0; for (var q = 0; q < 120; q++) { x.bolas = [bola(150, 300, 0, -3)]; n += L.avanzar(x, 1, nunca).filter(function (s) { return s === 'disparo'; }).length; } return n; };
+var la2 = coger('laser').e; L.activar(la2, 'laser');
+comprobar(cuenta(la2) > cuenta(la), 'el láser sumado dispara más rápido');
+var gu = coger('larga').e; L.activar(gu, 'larga');
+var gu2 = L.arreglar(JSON.parse(JSON.stringify(gu)));
+comprobar(L.valido(gu2) && L.nivelDe(gu2, 'larga') === 2, 'lo sumado se guarda con la partida');
+var vj = coger('larga').e; delete vj.niveles;
+comprobar(L.nivelDe(L.arreglar(vj), 'larga') === 1, 'las partidas sin niveles siguen valiendo');
+
 // 19. Una partida larga con poderes nunca se queda atascada ni sale del campo
 var j = L.nuevo(), az = azarFijo(9), pasos = 0, dentro = true, cogidas = {};
 L.lanzar(j, az);

@@ -92,8 +92,9 @@
       ctx.fillStyle = i === 0 ? colores.cabeza : colores.serpiente;
       redondeado((p % COLS) * c + m, Math.floor(p / COLS) * c + m, c - 2 * m, c * 0.28);
       // Une cada trozo con el siguiente para que parezca continua
-      if (i > 0) {
-        var q = e.cuerpo[i - 1];
+      // (no si ha cruzado un borde: entonces están en lados opuestos del campo)
+      var q = i > 0 ? e.cuerpo[i - 1] : -1;
+      if (i > 0 && Math.abs(p % COLS - q % COLS) + Math.abs(Math.floor(p / COLS) - Math.floor(q / COLS)) === 1) {
         var x = Math.min(p % COLS, q % COLS) * c + m, y = Math.min(Math.floor(p / COLS), Math.floor(q / COLS)) * c + m;
         var horizontal = Math.floor(p / COLS) === Math.floor(q / COLS);
         ctx.fillRect(x + (horizontal ? c / 2 : 0), y + (horizontal ? 0 : c / 2), c - 2 * m, c - 2 * m);
